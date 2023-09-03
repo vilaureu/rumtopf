@@ -5,3 +5,5 @@ edition = "2021"
 authors = ["vilaureu"]
 
 [dependencies]
+pulldown-cmark = { version = "0.9.3", default-features = false }
+regex = "1.9.3"
