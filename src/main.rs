@@ -1,8 +1,9 @@
 use std::{
     env::args_os,
+    fmt::Write,
     fs::{create_dir, read_dir, File},
-    io::Write,
     path::Path,
+    vec,
 };
 
 use pulldown_cmark::{escape::escape_html, html::push_html, Event, HeadingLevel, Parser, Tag};
@@ -18,6 +19,7 @@ fn main() {
     create_dir(&destination).expect("cannot create destination directory");
 
     let source = read_dir(source).expect("failed to read source directory");
+    let mut recipes = vec![];
     for source in source {
         let source = source.expect("failed to iterate through source directory");
         let typ = source.file_type().expect("failed to query file type");
@@ -34,16 +36,19 @@ fn main() {
             continue;
         }
 
-        process_file(&path, destination.as_ref());
+        recipes.push(process_file(&path, destination.as_ref()));
     }
+
+    create_index(recipes, destination.as_ref());
 }
 
 struct Recipe {
-    name: String,
+    title: String,
     short: String,
 }
 
-fn process_file(source: &Path, destination: &Path) {
+fn process_file(source: &Path, destination: &Path) -> Recipe {
+    // TODO: Sanitize filename.
     let short = source
         .file_stem()
         .expect("file without filename")
@@ -60,16 +65,22 @@ fn process_file(source: &Path, destination: &Path) {
     let mut recipe = String::new();
     push_html(&mut recipe, &mut parser);
     // TODO: Replace with proper templating.
-    destination
-        .write_all(
-            format!(
-                include_str!("template.html"),
-                recipe = recipe,
-                title = parser.escaped_title()
-            )
-            .as_bytes(),
+
+    std::io::Write::write_all(
+        &mut destination,
+        format!(
+            include_str!("template.html"),
+            recipe = recipe,
+            title = parser.escaped_title()
         )
-        .expect("failed to write to HTML file");
+        .as_bytes(),
+    )
+    .expect("failed to write to HTML file");
+
+    Recipe {
+        title: parser.title,
+        short: short.to_string(),
+    }
 }
 
 struct ServingWrapper<I> {
@@ -144,4 +155,26 @@ where
             e => e,
         })
     }
+}
+
+fn create_index(recipes: Vec<Recipe>, destination: &Path) {
+    let mut destination = File::options()
+        .write(true)
+        .create_new(true)
+        .open(destination.join("index.html"))
+        .expect("failed to create HTML file");
+
+    let mut links = String::new();
+    for recipe in recipes {
+        writeln!(
+            links,
+            r#"<li><a href="{}.html">{}</a></li>"#,
+            recipe.short, recipe.title
+        ).expect("failed to create navigation");
+    }
+    std::io::Write::write_all(
+        &mut destination,
+        format!(include_str!("index.html"), links).as_bytes(),
+    )
+    .expect("failed to write to HTML file");
 }
