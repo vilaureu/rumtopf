@@ -33,6 +33,11 @@ fn main() {
             .and_then(|extension| extension.to_str())
             .is_some_and(|extension| extension.eq_ignore_ascii_case("md"))
         {
+            std::fs::copy(
+                &path,
+                Path::new(&destination).join(path.file_name().unwrap()),
+            )
+            .expect("cannot copy file");
             continue;
         }
 
@@ -170,7 +175,8 @@ fn create_index(recipes: Vec<Recipe>, destination: &Path) {
             links,
             r#"<li><a href="{}.html">{}</a></li>"#,
             recipe.short, recipe.title
-        ).expect("failed to create navigation");
+        )
+        .expect("failed to create navigation");
     }
     std::io::Write::write_all(
         &mut destination,
