@@ -7,3 +7,5 @@ authors = ["vilaureu"]
 [dependencies]
 pulldown-cmark = { version = "0.9.3", default-features = false }
 regex = "1.9.3"
+handlebars = "4.4.0"
+serde_json = "1.0.105"

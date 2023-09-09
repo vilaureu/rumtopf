@@ -6,8 +6,10 @@ use std::{
     vec,
 };
 
+use handlebars::{no_escape, Handlebars};
 use pulldown_cmark::{escape::escape_html, html::push_html, Event, HeadingLevel, Parser, Tag};
 use regex::{Captures, Regex};
+use serde_json::json;
 
 fn main() {
     // TODO: Proper error handling.
@@ -15,6 +17,16 @@ fn main() {
     let mut args = args_os().skip(1);
     let source = args.next().expect("missing source argument");
     let destination = args.next().expect("missing destination argument");
+
+    let mut reg = Handlebars::new();
+    reg.set_strict_mode(true);
+    reg.register_escape_fn(no_escape);
+    reg.register_template_string("recipe", include_str!("recipe.html"))
+        .expect("failed to register template");
+    reg.register_template_string("index", include_str!("index.html"))
+        .expect("failed to register template");
+    reg.register_template_string("servings", include_str!("servings.html"))
+        .expect("failed to register template");
 
     create_dir(&destination).expect("cannot create destination directory");
 
@@ -41,10 +53,10 @@ fn main() {
             continue;
         }
 
-        recipes.push(process_file(&path, destination.as_ref()));
+        recipes.push(process_file(&path, destination.as_ref(), &reg));
     }
 
-    create_index(recipes, destination.as_ref());
+    create_index(recipes, destination.as_ref(), &reg);
 }
 
 struct Recipe {
@@ -52,7 +64,7 @@ struct Recipe {
     short: String,
 }
 
-fn process_file(source: &Path, destination: &Path) -> Recipe {
+fn process_file(source: &Path, destination: &Path, reg: &Handlebars) -> Recipe {
     // TODO: Sanitize filename.
     let short = source
         .file_stem()
@@ -66,18 +78,18 @@ fn process_file(source: &Path, destination: &Path) -> Recipe {
         .open(destination.join(short.to_string() + ".html"))
         .expect("failed to create HTML file");
 
-    let mut parser: ServingWrapper<_> = Parser::new(&source).into();
+    let mut parser = ServingWrapper::new(Parser::new(&source), reg);
     let mut recipe = String::new();
     push_html(&mut recipe, &mut parser);
     // TODO: Replace with proper templating.
 
     std::io::Write::write_all(
         &mut destination,
-        format!(
-            include_str!("template.html"),
-            recipe = recipe,
-            title = parser.escaped_title()
+        reg.render(
+            "recipe",
+            &json!({"recipe": recipe, "title": parser.escaped_title()}),
         )
+        .expect("failed to render template")
         .as_bytes(),
     )
     .expect("failed to write to HTML file");
@@ -88,15 +100,28 @@ fn process_file(source: &Path, destination: &Path) -> Recipe {
     }
 }
 
-struct ServingWrapper<I> {
+struct ServingWrapper<'l, I> {
     iter: I,
     scaling_re: Regex,
     servings_re: Regex,
+    reg: &'l Handlebars<'l>,
     title: String,
     in_title: bool,
 }
 
-impl<I> ServingWrapper<I> {
+impl<'l, I> ServingWrapper<'l, I> {
+    pub(crate) fn new(iter: I, reg: &'l Handlebars<'l>) -> Self {
+        Self {
+            iter,
+            scaling_re: Regex::new(r"::\s*(.+)\s*::").expect("failed to compile scaling regex"),
+            servings_re: Regex::new(r"::(.+)\s+servings?\s*::")
+                .expect("failed to compile servings regex"),
+            reg,
+            title: String::new(),
+            in_title: false,
+        }
+    }
+
     pub(crate) fn escaped_title(&self) -> String {
         let mut title = String::new();
         escape_html(&mut title, &self.title).expect("failed to escape HTML");
@@ -113,7 +138,9 @@ impl<I> ServingWrapper<I> {
 
         let text = self.servings_re.replace_all(&text, |caps: &Captures| {
             let servings: f32 = caps[1].parse().expect("parsing servings value failed");
-            format!(include_str!("servings.html"), servings)
+            self.reg
+                .render("servings", &json!({"servings": servings}))
+                .expect("failed to render template")
         });
         let text = self.scaling_re.replace_all(&text, |caps: &Captures| {
             let base: f32 = caps[1].parse().expect("parsing base value failed");
@@ -123,20 +150,7 @@ impl<I> ServingWrapper<I> {
     }
 }
 
-impl<I> From<I> for ServingWrapper<I> {
-    fn from(value: I) -> Self {
-        Self {
-            iter: value,
-            scaling_re: Regex::new(r"::\s*(.+)\s*::").expect("failed to compile scaling regex"),
-            servings_re: Regex::new(r"::(.+)\s+servings?\s*::")
-                .expect("failed to compile servings regex"),
-            title: String::new(),
-            in_title: false,
-        }
-    }
-}
-
-impl<'s, I> Iterator for ServingWrapper<I>
+impl<'s, I> Iterator for ServingWrapper<'s, I>
 where
     I: Iterator<Item = Event<'s>>,
 {
@@ -162,7 +176,7 @@ where
     }
 }
 
-fn create_index(recipes: Vec<Recipe>, destination: &Path) {
+fn create_index(recipes: Vec<Recipe>, destination: &Path, reg: &Handlebars) {
     let mut destination = File::options()
         .write(true)
         .create_new(true)
@@ -180,7 +194,9 @@ fn create_index(recipes: Vec<Recipe>, destination: &Path) {
     }
     std::io::Write::write_all(
         &mut destination,
-        format!(include_str!("index.html"), links).as_bytes(),
+        reg.render("index", &json!({"links": links}))
+            .expect("failed to render template")
+            .as_bytes(),
     )
     .expect("failed to write to HTML file");
 }
