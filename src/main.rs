@@ -1,3 +1,5 @@
+mod parsing;
+
 use std::{
     env::args_os,
     fs::{create_dir, read_dir, File},
@@ -7,9 +9,7 @@ use std::{
 };
 
 use handlebars::Handlebars;
-use pulldown_cmark::{escape::escape_html, html::push_html, Event, HeadingLevel, Parser, Tag};
-use regex::{Captures, Regex};
-use serde::Serialize;
+use parsing::*;
 use serde_json::json;
 
 fn main() {
@@ -19,19 +19,17 @@ fn main() {
     let source = args.next().expect("missing source argument");
     let destination = args.next().expect("missing destination argument");
 
-    let mut reg = Handlebars::new();
-    reg.set_strict_mode(true);
-    reg.register_template_string("recipe", include_str!("templates/recipe.html"))
-        .expect("failed to register template");
-    reg.register_template_string("index", include_str!("templates/index.html"))
-        .expect("failed to register template");
-    reg.register_template_string("servings", include_str!("templates/servings.html"))
-        .expect("failed to register template");
-    reg.register_template_string("scaling", include_str!("templates/scaling.html"))
-        .expect("failed to register template");
+    let reg = handlebars_registry();
 
     create_dir(&destination).expect("cannot create destination directory");
+    let recipes = process_source_dir(source.as_ref(), &reg, destination.as_ref());
+    for recipe in &recipes {
+        write_recipe(recipe, &recipes, &reg, destination.as_ref());
+    }
+    create_index(recipes, destination.as_ref(), &reg);
+}
 
+fn process_source_dir(source: &Path, reg: &Handlebars, destination: &Path) -> Vec<Recipe> {
     let source = read_dir(source).expect("failed to read source directory");
     let mut recipes = vec![];
     for source in source {
@@ -55,113 +53,25 @@ fn main() {
             continue;
         }
 
-        recipes.push(parse_file(&path, &reg));
+        recipes.push(parse_file(&path, reg));
     }
-
-    for recipe in &recipes {
-        write_recipe(&recipe, &recipes, &reg, destination.as_ref());
-    }
-
-    create_index(recipes, destination.as_ref(), &reg);
+    recipes
 }
 
-#[derive(Serialize)]
-struct Recipe {
-    title: String,
-    short: String,
-    #[serde(skip)]
-    recipe: String,
-}
+fn handlebars_registry() -> Handlebars<'static> {
+    let mut reg = Handlebars::new();
+    reg.set_strict_mode(true);
 
-fn parse_file(source: &Path, reg: &Handlebars) -> Recipe {
-    let short = source
-        .file_stem()
-        .expect("file without filename")
-        .to_string_lossy();
+    reg.register_template_string("recipe", include_str!("templates/recipe.html"))
+        .expect("failed to register template");
+    reg.register_template_string("index", include_str!("templates/index.html"))
+        .expect("failed to register template");
+    reg.register_template_string("servings", include_str!("templates/servings.html"))
+        .expect("failed to register template");
+    reg.register_template_string("scaling", include_str!("templates/scaling.html"))
+        .expect("failed to register template");
 
-    let source = std::fs::read_to_string(source).expect("failed to read MD file");
-
-    let mut parser = ServingWrapper::new(Parser::new(&source), reg);
-    let mut recipe = String::new();
-    push_html(&mut recipe, &mut parser);
-
-    Recipe {
-        title: parser.title,
-        short: short.to_string(),
-        recipe,
-    }
-}
-
-struct ServingWrapper<'l, I> {
-    iter: I,
-    scaling_re: Regex,
-    servings_re: Regex,
-    reg: &'l Handlebars<'l>,
-    title: String,
-    in_title: bool,
-}
-
-impl<'l, I> ServingWrapper<'l, I> {
-    pub(crate) fn new(iter: I, reg: &'l Handlebars<'l>) -> Self {
-        Self {
-            iter,
-            scaling_re: Regex::new(r"::\s*(.+)\s*::").expect("failed to compile scaling regex"),
-            servings_re: Regex::new(r"::(.+)\s+servings?\s*::")
-                .expect("failed to compile servings regex"),
-            reg,
-            title: String::new(),
-            in_title: false,
-        }
-    }
-
-    fn replace(&mut self, unescaped: &str) -> String {
-        if self.in_title {
-            self.title.push_str(unescaped);
-        }
-
-        let mut text = String::new();
-        escape_html(&mut text, unescaped).expect("failed to escape HTML");
-
-        let text = self.servings_re.replace_all(&text, |caps: &Captures| {
-            let servings: f32 = caps[1].parse().expect("parsing servings value failed");
-            self.reg
-                .render("servings", &json!({"servings": servings}))
-                .expect("failed to render template")
-        });
-        let text = self.scaling_re.replace_all(&text, |caps: &Captures| {
-            let base: f32 = caps[1].parse().expect("parsing base value failed");
-            self.reg
-                .render("scaling", &json!({"base": base}))
-                .expect("failed to render template")
-        });
-        text.to_string()
-    }
-}
-
-impl<'s, I> Iterator for ServingWrapper<'s, I>
-where
-    I: Iterator<Item = Event<'s>>,
-{
-    type Item = Event<'s>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        Some(match self.iter.next()? {
-            Event::Text(text) => Event::Html(self.replace(&text).into()),
-            Event::Code(code) => {
-                let code = self.replace(&code);
-                Event::Html(format!("<code>{}</code>", code).into())
-            }
-            e if matches!(e, Event::Start(Tag::Heading(HeadingLevel::H1, _, _))) => {
-                self.in_title = true;
-                e
-            }
-            e if matches!(e, Event::End(Tag::Heading(HeadingLevel::H1, _, _))) => {
-                self.in_title = false;
-                e
-            }
-            e => e,
-        })
-    }
+    reg
 }
 
 fn write_recipe(recipe: &Recipe, recipes: &Vec<Recipe>, reg: &Handlebars, destination: &Path) {
