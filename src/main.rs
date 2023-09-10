@@ -6,7 +6,7 @@ use std::{
     vec,
 };
 
-use handlebars::{no_escape, Handlebars};
+use handlebars::Handlebars;
 use pulldown_cmark::{escape::escape_html, html::push_html, Event, HeadingLevel, Parser, Tag};
 use regex::{Captures, Regex};
 use serde::Serialize;
@@ -21,7 +21,6 @@ fn main() {
 
     let mut reg = Handlebars::new();
     reg.set_strict_mode(true);
-    reg.register_escape_fn(no_escape);
     reg.register_template_string("recipe", include_str!("recipe.html"))
         .expect("failed to register template");
     reg.register_template_string("index", include_str!("index.html"))
@@ -75,7 +74,6 @@ struct Recipe {
 }
 
 fn parse_file(source: &Path, reg: &Handlebars) -> Recipe {
-    // TODO: Sanitize filename.
     let short = source
         .file_stem()
         .expect("file without filename")
@@ -88,7 +86,7 @@ fn parse_file(source: &Path, reg: &Handlebars) -> Recipe {
     push_html(&mut recipe, &mut parser);
 
     Recipe {
-        title: parser.escaped_title(),
+        title: parser.title,
         short: short.to_string(),
         recipe,
     }
@@ -114,12 +112,6 @@ impl<'l, I> ServingWrapper<'l, I> {
             title: String::new(),
             in_title: false,
         }
-    }
-
-    pub(crate) fn escaped_title(&self) -> String {
-        let mut title = String::new();
-        escape_html(&mut title, &self.title).expect("failed to escape HTML");
-        title
     }
 
     fn replace(&mut self, unescaped: &str) -> String {
@@ -180,6 +172,8 @@ fn write_recipe(recipe: &Recipe, recipes: &Vec<Recipe>, reg: &Handlebars, destin
         )
         .expect("failed to render template");
 
+    // short was a valid file stem so it should be safe to use as a stem here
+    // too.
     let mut destination = File::options()
         .write(true)
         .create_new(true)
