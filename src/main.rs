@@ -56,7 +56,11 @@ fn main() {
             continue;
         }
 
-        recipes.push(process_file(&path, destination.as_ref(), &reg));
+        recipes.push(parse_file(&path, &reg));
+    }
+
+    for recipe in &recipes {
+        write_recipe(&recipe, &recipes, &reg, destination.as_ref());
     }
 
     create_index(recipes, destination.as_ref(), &reg);
@@ -66,9 +70,11 @@ fn main() {
 struct Recipe {
     title: String,
     short: String,
+    #[serde(skip)]
+    recipe: String,
 }
 
-fn process_file(source: &Path, destination: &Path, reg: &Handlebars) -> Recipe {
+fn parse_file(source: &Path, reg: &Handlebars) -> Recipe {
     // TODO: Sanitize filename.
     let short = source
         .file_stem()
@@ -76,31 +82,15 @@ fn process_file(source: &Path, destination: &Path, reg: &Handlebars) -> Recipe {
         .to_string_lossy();
 
     let source = std::fs::read_to_string(source).expect("failed to read MD file");
-    let mut destination = File::options()
-        .write(true)
-        .create_new(true)
-        .open(destination.join(short.to_string() + ".html"))
-        .expect("failed to create HTML file");
 
     let mut parser = ServingWrapper::new(Parser::new(&source), reg);
     let mut recipe = String::new();
     push_html(&mut recipe, &mut parser);
-    // TODO: Replace with proper templating.
-
-    destination
-        .write_all(
-            reg.render(
-                "recipe",
-                &json!({"recipe": recipe, "title": parser.escaped_title()}),
-            )
-            .expect("failed to render template")
-            .as_bytes(),
-        )
-        .expect("failed to write to HTML file");
 
     Recipe {
-        title: parser.title,
+        title: parser.escaped_title(),
         short: short.to_string(),
+        recipe,
     }
 }
 
@@ -180,6 +170,25 @@ where
             e => e,
         })
     }
+}
+
+fn write_recipe(recipe: &Recipe, recipes: &Vec<Recipe>, reg: &Handlebars, destination: &Path) {
+    let html = reg
+        .render(
+            "recipe",
+            &json!({"recipe": recipe.recipe, "title": recipe.title, "recipes": recipes}),
+        )
+        .expect("failed to render template");
+
+    let mut destination = File::options()
+        .write(true)
+        .create_new(true)
+        .open(destination.join(recipe.short.to_string() + ".html"))
+        .expect("failed to create HTML file");
+
+    destination
+        .write_all(html.as_bytes())
+        .expect("failed to write HTML file");
 }
 
 fn create_index(recipes: Vec<Recipe>, destination: &Path, reg: &Handlebars) {
