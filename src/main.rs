@@ -21,13 +21,13 @@ fn main() {
 
     let mut reg = Handlebars::new();
     reg.set_strict_mode(true);
-    reg.register_template_string("recipe", include_str!("recipe.html"))
+    reg.register_template_string("recipe", include_str!("templates/recipe.html"))
         .expect("failed to register template");
-    reg.register_template_string("index", include_str!("index.html"))
+    reg.register_template_string("index", include_str!("templates/index.html"))
         .expect("failed to register template");
-    reg.register_template_string("servings", include_str!("servings.html"))
+    reg.register_template_string("servings", include_str!("templates/servings.html"))
         .expect("failed to register template");
-    reg.register_template_string("scaling", include_str!("scaling.html"))
+    reg.register_template_string("scaling", include_str!("templates/scaling.html"))
         .expect("failed to register template");
 
     create_dir(&destination).expect("cannot create destination directory");
