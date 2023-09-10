@@ -7,7 +7,9 @@
   <body>
     <h1>Recipe Overview</h1>
     <ul>
-      {{links}}
+      {{#each recipes}}
+        <li><a href="{{this.short}}.html">{{this.title}}</a></li>
+      {{/each}}
     </ul>
   </body>
 </html>

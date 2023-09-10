@@ -225,6 +225,7 @@ dependencies = [
  "handlebars",
  "pulldown-cmark",
  "regex",
+ "serde",
  "serde_json",
 ]
 

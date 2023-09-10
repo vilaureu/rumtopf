@@ -1,7 +1,7 @@
 use std::{
     env::args_os,
-    fmt::Write,
     fs::{create_dir, read_dir, File},
+    io::Write,
     path::Path,
     vec,
 };
@@ -9,6 +9,7 @@ use std::{
 use handlebars::{no_escape, Handlebars};
 use pulldown_cmark::{escape::escape_html, html::push_html, Event, HeadingLevel, Parser, Tag};
 use regex::{Captures, Regex};
+use serde::Serialize;
 use serde_json::json;
 
 fn main() {
@@ -59,6 +60,7 @@ fn main() {
     create_index(recipes, destination.as_ref(), &reg);
 }
 
+#[derive(Serialize)]
 struct Recipe {
     title: String,
     short: String,
@@ -83,16 +85,16 @@ fn process_file(source: &Path, destination: &Path, reg: &Handlebars) -> Recipe {
     push_html(&mut recipe, &mut parser);
     // TODO: Replace with proper templating.
 
-    std::io::Write::write_all(
-        &mut destination,
-        reg.render(
-            "recipe",
-            &json!({"recipe": recipe, "title": parser.escaped_title()}),
+    destination
+        .write_all(
+            reg.render(
+                "recipe",
+                &json!({"recipe": recipe, "title": parser.escaped_title()}),
+            )
+            .expect("failed to render template")
+            .as_bytes(),
         )
-        .expect("failed to render template")
-        .as_bytes(),
-    )
-    .expect("failed to write to HTML file");
+        .expect("failed to write to HTML file");
 
     Recipe {
         title: parser.title,
@@ -183,20 +185,11 @@ fn create_index(recipes: Vec<Recipe>, destination: &Path, reg: &Handlebars) {
         .open(destination.join("index.html"))
         .expect("failed to create HTML file");
 
-    let mut links = String::new();
-    for recipe in recipes {
-        writeln!(
-            links,
-            r#"<li><a href="{}.html">{}</a></li>"#,
-            recipe.short, recipe.title
+    destination
+        .write_all(
+            reg.render("index", &json!({"recipes": recipes}))
+                .expect("failed to render template")
+                .as_bytes(),
         )
-        .expect("failed to create navigation");
-    }
-    std::io::Write::write_all(
-        &mut destination,
-        reg.render("index", &json!({"links": links}))
-            .expect("failed to render template")
-            .as_bytes(),
-    )
-    .expect("failed to write to HTML file");
+        .expect("failed to write to HTML file");
 }
