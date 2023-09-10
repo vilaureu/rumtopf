@@ -28,6 +28,8 @@ fn main() {
         .expect("failed to register template");
     reg.register_template_string("servings", include_str!("servings.html"))
         .expect("failed to register template");
+    reg.register_template_string("scaling", include_str!("scaling.html"))
+        .expect("failed to register template");
 
     create_dir(&destination).expect("cannot create destination directory");
 
@@ -146,7 +148,9 @@ impl<'l, I> ServingWrapper<'l, I> {
         });
         let text = self.scaling_re.replace_all(&text, |caps: &Captures| {
             let base: f32 = caps[1].parse().expect("parsing base value failed");
-            format!(r#"<span class="scaling" data-base="{0}">{0}</span>"#, base)
+            self.reg
+                .render("scaling", &json!({"base": base}))
+                .expect("failed to render template")
         });
         text.to_string()
     }
