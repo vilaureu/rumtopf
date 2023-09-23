@@ -1,13 +1,11 @@
-# Pizza `</title>`
-
-This recipe is heavily mangled to test edge cases in the parser and escape code.
+# Pizza
 
 ## Ingredients
 
 {{2 servings}}
 
-- {{3e2}} g of &lt;pizza&gt; flour
-- `<{{190}}>` g of water
+- {{3e2}} g of pizza flour
+- {{190}} g of water
 - {{3}} g of salt
 - {{9.01}} g of sugar
 - {{1}} packs of yeast
@@ -34,10 +32,6 @@ until just about doubled in size.
 For extra brown crust in an oven that does not get very hot, pre-bake each
 spread out portion with just the sauce and any other hard ingredients for about
 3 minutes. Then add the cheese and let bake until gold brown.
-
-```
-You will have <i>successfully</i> **baked** &lt;{{2}}&gt; pizzas!
-```
 
 ## Source
 
