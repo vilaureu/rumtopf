@@ -46,8 +46,8 @@ impl<'l, I> ServingWrapper<'l, I> {
     pub(crate) fn new(iter: I, reg: &'l Handlebars<'l>) -> Self {
         Self {
             iter,
-            scaling_re: Regex::new(r"::\s*(.+)\s*::").expect("failed to compile scaling regex"),
-            servings_re: Regex::new(r"::(.+)\s+servings?\s*::")
+            scaling_re: Regex::new(r"\{\{\s*(.+)\s*\}\}").expect("failed to compile scaling regex"),
+            servings_re: Regex::new(r"\{\{(.+)\s+servings?\s*\}\}")
                 .expect("failed to compile servings regex"),
             reg,
             title: String::new(),

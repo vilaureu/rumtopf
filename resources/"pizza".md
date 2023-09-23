@@ -1,15 +1,17 @@
 # Pizza `</title>`
 
+This recipe is heavily mangled to test edge cases in the parser and escape code.
+
 ## Ingredients
 
-::2 servings::
+{{2 servings}}
 
-- ::3e2:: g of &lt;pizza&gt; flour
-- `<::190::>` g of water
-- ::3:: g of salt
-- ::9.01:: g of sugar
-- ::1:: packs of yeast
-- ::12:: g of olive oil
+- {{3e2}} g of &lt;pizza&gt; flour
+- `<{{190}}>` g of water
+- {{3}} g of salt
+- {{9.01}} g of sugar
+- {{1}} packs of yeast
+- {{12}} g of olive oil
 
 ## Preparations
 
@@ -20,7 +22,7 @@
 - Now mix for at least 10 more minutes by hand. Or continue to use the
   handmixer, for about 5 minutes. In general the result will just get better the
   longer you mix, do not overdo it however.
-- Split the dough into ::2:: equal portions by weight. Place each in a pre-oiled
+- Split the dough into {{2}} equal portions by weight. Place each in a pre-oiled
   bowl. Make sure to swirl the dough around in the bowl so it too is oiled from
   all sides.
 
@@ -34,7 +36,7 @@ spread out portion with just the sauce and any other hard ingredients for about
 3 minutes. Then add the cheese and let bake until gold brown.
 
 ```
-You will have <i>successfully</i> **baked** &lt;::2::&gt; pizzas!
+You will have <i>successfully</i> **baked** &lt;{{2}}&gt; pizzas!
 ```
 
 ## Source
