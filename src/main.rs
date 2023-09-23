@@ -72,6 +72,8 @@ fn handlebars_registry() -> Handlebars<'static> {
         .expect("failed to register template");
     reg.register_template_string("footer", include_str!("templates/footer.html"))
         .expect("failed to register template");
+    reg.register_template_string("header", include_str!("templates/header.html"))
+        .expect("failed to register template");
 
     reg
 }
