@@ -1,32 +1,33 @@
+mod args;
 mod parsing;
 
 use std::{
-    env::args_os,
     fs::{create_dir, read_dir, File},
     io::Write,
     path::Path,
     vec,
 };
 
+use args::Args;
+use clap::Parser;
 use handlebars::Handlebars;
 use parsing::*;
 use serde_json::json;
 
 fn main() {
     // TODO: Proper error handling.
-    // TODO: Proper argument parsing.
-    let mut args = args_os().skip(1);
-    let source = args.next().expect("missing source argument");
-    let destination = args.next().expect("missing destination argument");
+    let args = Args::parse();
+    let source = args.source;
+    let destination = args.destination;
 
     let reg = handlebars_registry();
 
     create_dir(&destination).expect("cannot create destination directory");
-    let recipes = process_source_dir(source.as_ref(), &reg, destination.as_ref());
+    let recipes = process_source_dir(&source, &reg, &destination);
     for recipe in &recipes {
-        write_recipe(recipe, &recipes, &reg, destination.as_ref());
+        write_recipe(recipe, &recipes, &reg, &destination);
     }
-    create_index(recipes, destination.as_ref(), &reg);
+    create_index(recipes, &destination, &reg);
 }
 
 fn process_source_dir(source: &Path, reg: &Handlebars, destination: &Path) -> Vec<Recipe> {
