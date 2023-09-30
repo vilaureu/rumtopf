@@ -5,7 +5,8 @@
 }
 
 #content-wrap {
-    padding-bottom: 4rem; /* footer height? */
+    /* footer height? */
+    padding-bottom: 4rem;
 }
 
 #footer {

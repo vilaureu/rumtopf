@@ -1,7 +1,21 @@
 <form method="get" class="row">
     <label for="servings_input" class="form-label">Servings</label>
     <div class="col-10">
-        <input id="servings_input" type="number" name="servings" min="0" step="any" class="servings_input form-control" value="{{servings}}" data-base="{{servings}}"/>
+        <input
+            id="servings_input"
+            type="number"
+            name="servings"
+            min="0"
+            step="any"
+            class="servings_input form-control"
+            value="{{servings}}"
+            data-base="{{servings}}"
+        />
     </div>
-    <input type="submit" class="col-2 servings_submit btn btn-outline-primary" value="Change" disabled />
+    <input
+        type="submit"
+        class="col-2 servings_submit btn btn-outline-primary"
+        value="Change"
+        disabled
+    />
 </form>

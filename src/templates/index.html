@@ -1,48 +1,46 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta charset="utf-8">
+        <meta charset="utf-8" />
         <title>Recipes</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link href="bootstrap.min.css" rel="stylesheet">
-        <link href="rumtopf.css" rel="stylesheet">
+        <link href="bootstrap.min.css" rel="stylesheet" />
+        <link href="rumtopf.css" rel="stylesheet" />
     </head>
     <body id="page-container">
-
         {{> header}}
 
         <div id="content-wrap container">
-
             <div class="row">
-
-                <div class="col-xl-3">
-
-                </div>
+                <div class="col-xl-3"></div>
 
                 <div class="col-xl-6">
                     <div class="px-2">
+                        <h1 class="mb-0">Recipe Overview</h1>
+                        <h6>
+                            <code class="text-muted"
+                                >{{len recipes}} recipes available</code
+                            >
+                        </h6>
 
-                    
-                    <h1 class="mb-0">Recipe Overview</h1>
-                    <h6><code class="text-muted">{{len recipes}} recipes available</code></h6>
+                        <hr class="mt-1" />
 
-                    <hr class="mt-1">
-
-                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                    {{#each recipes}}
-                        <a class="col text-decoration-none" href="{{this.short}}.html">{{this.title}}</a>
-                    {{/each}}
-                    </div>
-
+                        <div
+                            class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3"
+                        >
+                            {{#each recipes}}
+                            <a
+                                class="col text-decoration-none"
+                                href="{{this.short}}.html"
+                                >{{this.title}}</a
+                            >
+                            {{/each}}
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-xl-3">
-
-                </div>
-
+                <div class="col-xl-3"></div>
             </div>
-
         </div>
 
         {{> footer}}
