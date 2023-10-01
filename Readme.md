@@ -29,6 +29,8 @@ Create your own recipes in the same way and place them inside a new directory.
 - `SOURCE_DIR` is the directory with your _Markdown_ recipes.
 - `DESTINATION_DIR` must not exist yet and will be created by the generator.
 
+See `--help` for more options.
+
 `DESTINATION_DIR` will now contain the generated HTML files.
 
 ## Deployment

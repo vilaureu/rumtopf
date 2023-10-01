@@ -19,7 +19,7 @@ use serde_json::json;
 use utils::*;
 
 fn main() -> Result<ExitCode> {
-    let args = Args::try_parse()?;
+    let args = Args::parse();
     let reg = handlebars_registry();
     let mut ctx = Ctx {
         src: args.source,
