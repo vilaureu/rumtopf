@@ -1,62 +1,115 @@
 mod args;
 mod parsing;
+mod utils;
 
 use std::{
-    fs::{create_dir, read_dir, File},
+    fs::{create_dir, read_dir, DirEntry, File},
     io::Write,
     path::Path,
+    process::ExitCode,
     vec,
 };
 
+use anyhow::{bail, Context, Result};
 use args::Args;
 use clap::Parser;
 use handlebars::Handlebars;
 use parsing::*;
 use serde_json::json;
+use utils::*;
 
-fn main() {
-    // TODO: Proper error handling.
-    let args = Args::parse();
-    let source = args.source;
-    let destination = args.destination;
-
+fn main() -> Result<ExitCode> {
+    let args = Args::try_parse()?;
     let reg = handlebars_registry();
+    let mut ctx = Ctx {
+        src: args.source,
+        reg,
+        dest: args.destination,
+        any_error: false,
+    };
 
-    create_dir(&destination).expect("cannot create destination directory");
-    let recipes = process_source_dir(&source, &reg, &destination);
+    let recipes = process_source_dir(&mut ctx)?;
     for recipe in &recipes {
-        write_recipe(recipe, &recipes, &reg, &destination);
+        if let Err(err) = write_recipe(&ctx, recipe, &recipes)
+            .with_context(|| format!("Skipping writing recipe {}", recipe.title))
+        {
+            ctx.any_error = true;
+            eprintln!("{err:#}");
+        }
     }
-    create_index(recipes, &destination, &reg);
+    if let Err(err) = create_index(&ctx, recipes) {
+        ctx.any_error = true;
+        eprintln!("{err:#}");
+    }
+
+    Ok(if ctx.any_error {
+        ExitCode::from(2)
+    } else {
+        ExitCode::SUCCESS
+    })
 }
 
-fn process_source_dir(source: &Path, reg: &Handlebars, destination: &Path) -> Vec<Recipe> {
-    let source = read_dir(source).expect("failed to read source directory");
+fn process_source_dir(ctx: &mut Ctx) -> Result<Vec<Recipe>> {
+    let sources = read_dir(&ctx.src).with_context(|| {
+        format!(
+            "Failed to read source directory {}",
+            ctx.src.to_string_lossy()
+        )
+    })?;
+    create_dir(&ctx.dest).with_context(|| {
+        format!(
+            "Failed to create destination directory {}",
+            ctx.dest.to_string_lossy()
+        )
+    })?;
+
     let mut recipes = vec![];
-    for source in source {
-        let source = source.expect("failed to iterate through source directory");
-        let typ = source.file_type().expect("failed to query file type");
-        if !typ.is_file() {
-            continue;
-        }
-
-        let path = source.path();
-        if !path
-            .extension()
-            .and_then(|extension| extension.to_str())
-            .is_some_and(|extension| extension.eq_ignore_ascii_case("md"))
-        {
-            std::fs::copy(
-                &path,
-                Path::new(&destination).join(path.file_name().unwrap()),
+    for entry in sources {
+        let entry = entry.with_context(|| {
+            format!(
+                "Failed to list contents of source directory {}",
+                ctx.src.to_string_lossy()
             )
-            .expect("cannot copy file");
-            continue;
-        }
+        });
+        let recipe = entry.and_then(|entry| {
+            process_source_entry(ctx, &entry).with_context(|| {
+                format!("Skipping failed source {}", entry.path().to_string_lossy())
+            })
+        });
+        let recipe = match recipe {
+            Ok(r) => r,
+            Err(err) => {
+                ctx.any_error = true;
+                eprintln!("{err:#}");
+                continue;
+            }
+        };
 
-        recipes.push(parse_file(&path, reg));
+        if let Some(recipe) = recipe {
+            recipes.push(recipe);
+        }
     }
-    recipes
+    Ok(recipes)
+}
+
+fn process_source_entry(ctx: &mut Ctx, entry: &DirEntry) -> Result<Option<Recipe>> {
+    let typ = entry.file_type().context("Failed to query file type")?;
+    if !typ.is_file() {
+        bail!("Source is not a file");
+    }
+
+    let path = entry.path();
+    if !path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("md"))
+    {
+        std::fs::copy(&path, Path::new(&ctx.dest).join(path.file_name().unwrap()))
+            .context("Failed to copy file")?;
+        return Ok(None);
+    }
+
+    Ok(Some(parse_file(ctx, &path)?))
 }
 
 fn handlebars_registry() -> Handlebars<'static> {
@@ -79,39 +132,36 @@ fn handlebars_registry() -> Handlebars<'static> {
     reg
 }
 
-fn write_recipe(recipe: &Recipe, recipes: &Vec<Recipe>, reg: &Handlebars, destination: &Path) {
-    let html = reg
-        .render(
-            "recipe",
-            &json!({"recipe": recipe.recipe, "title": recipe.title, "recipes": recipes}),
-        )
-        .expect("failed to render template");
+fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &Vec<Recipe>) -> Result<()> {
+    let html = render(
+        &ctx.reg,
+        "recipe",
+        &json!({"recipe": recipe.recipe, "title": recipe.title, "recipes": recipes}),
+    )?;
 
     // short was a valid file stem so it should be safe to use as a stem here
     // too.
-    let mut destination = File::options()
+    let path = ctx.dest.join(recipe.short.to_string() + ".html");
+    let mut file = File::options()
         .write(true)
         .create_new(true)
-        .open(destination.join(recipe.short.to_string() + ".html"))
-        .expect("failed to create HTML file");
+        .open(&path)
+        .with_context(|| format!("failed to create HTML file {}", path.to_string_lossy()))?;
+    file.write_all(html.as_bytes())
+        .with_context(|| format!("failed to write HTML file {}", path.to_string_lossy()))?;
 
-    destination
-        .write_all(html.as_bytes())
-        .expect("failed to write HTML file");
+    Ok(())
 }
 
-fn create_index(recipes: Vec<Recipe>, destination: &Path, reg: &Handlebars) {
-    let mut destination = File::options()
+fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
+    let mut file = File::options()
         .write(true)
         .create_new(true)
-        .open(destination.join("index.html"))
-        .expect("failed to create HTML file");
+        .open(ctx.dest.join("index.html"))
+        .context("failed to create index.html file")?;
 
-    destination
-        .write_all(
-            reg.render("index", &json!({"recipes": recipes}))
-                .expect("failed to render template")
-                .as_bytes(),
-        )
-        .expect("failed to write to HTML file");
+    file.write_all(render(&ctx.reg, "index", &json!({"recipes": recipes}))?.as_bytes())
+        .context("failed to write index.html file")?;
+
+    Ok(())
 }

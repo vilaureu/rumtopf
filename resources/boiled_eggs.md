@@ -10,6 +10,7 @@ It only exists to test edge cases in the parser and escape code.
 - `<{{1e2}}>` eggs
 - 190 liters of water
 - {{3.01}} g of salt
+- {{no}} g of sugar
 
 ## Preparations
 
