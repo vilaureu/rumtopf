@@ -30,6 +30,14 @@ fn main() -> Result<ExitCode> {
         any_error: false,
     };
 
+    create_dir(&ctx.dest).with_context(|| {
+        format!(
+            "Failed to create destination directory {}",
+            ctx.dest.to_string_lossy()
+        )
+    })?;
+    create_static(&mut ctx);
+    // Copy source files after creating static files to allow overriding them.
     let recipes = process_source_dir(&mut ctx)?;
     for recipe in &recipes {
         if let Err(err) = write_recipe(&ctx, recipe, &recipes)
@@ -41,7 +49,6 @@ fn main() -> Result<ExitCode> {
     if let Err(err) = create_index(&ctx, recipes) {
         ctx.print_error(err);
     }
-    create_static(&mut ctx);
 
     Ok(if ctx.any_error {
         ExitCode::from(2)
@@ -55,12 +62,6 @@ fn process_source_dir(ctx: &mut Ctx) -> Result<Vec<Recipe>> {
         format!(
             "Failed to read source directory {}",
             ctx.src.to_string_lossy()
-        )
-    })?;
-    create_dir(&ctx.dest).with_context(|| {
-        format!(
-            "Failed to create destination directory {}",
-            ctx.dest.to_string_lossy()
         )
     })?;
 
