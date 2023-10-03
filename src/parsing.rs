@@ -71,10 +71,11 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
         escape_html(&mut text, unescaped).context("Failed to escape HTML")?;
 
         let text = self.servings_re.replace_all(&text, |caps: &Captures| {
-            let replacement = caps[1]
+            let servings = &caps[1];
+            let replacement = servings
                 .parse()
-                .with_context(|| format!(r#"Failed to parse servings {}"#, &caps[1]))
-                .and_then(|servings: f32| {
+                .with_context(|| format!(r#"Failed to parse servings {}"#, servings))
+                .and_then(|_: f32| {
                     render(&self.ctx.reg, "servings", &json!({"servings": servings}))
                 });
             match replacement {
@@ -86,10 +87,11 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
             }
         });
         let text = self.scaling_re.replace_all(&text, |caps: &Captures| {
-            let replacement = caps[1]
+            let base = &caps[1];
+            let replacement = base
                 .parse()
-                .with_context(|| format!(r#"Failed to parse scaling base "{}""#, &caps[1]))
-                .and_then(|base: f32| render(&self.ctx.reg, "scaling", &json!({"base": base})));
+                .with_context(|| format!(r#"Failed to parse scaling base "{}""#, base))
+                .and_then(|_: f32| render(&self.ctx.reg, "scaling", &json!({"base": base})));
             match replacement {
                 Ok(t) => t,
                 Err(err) => {
