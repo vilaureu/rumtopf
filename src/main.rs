@@ -1,4 +1,5 @@
 mod args;
+mod files;
 mod parsing;
 mod utils;
 
@@ -13,6 +14,7 @@ use std::{
 use anyhow::{bail, Context, Result};
 use args::Args;
 use clap::Parser;
+use files::*;
 use handlebars::Handlebars;
 use parsing::*;
 use serde_json::json;
@@ -116,18 +118,10 @@ fn handlebars_registry() -> Handlebars<'static> {
     let mut reg = Handlebars::new();
     reg.set_strict_mode(true);
 
-    reg.register_template_string("recipe", include_str!("templates/recipe.html"))
-        .expect("failed to register template");
-    reg.register_template_string("index", include_str!("templates/index.html"))
-        .expect("failed to register template");
-    reg.register_template_string("servings", include_str!("templates/servings.html"))
-        .expect("failed to register template");
-    reg.register_template_string("scaling", include_str!("templates/scaling.html"))
-        .expect("failed to register template");
-    reg.register_template_string("footer", include_str!("templates/footer.html"))
-        .expect("failed to register template");
-    reg.register_template_string("header", include_str!("templates/header.html"))
-        .expect("failed to register template");
+    for (name, content) in TEMPLATES {
+        reg.register_template_string(name, content)
+            .expect("failed to register template");
+    }
 
     reg
 }

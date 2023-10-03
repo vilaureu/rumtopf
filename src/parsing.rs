@@ -19,7 +19,7 @@ pub(crate) struct Recipe {
 pub(crate) fn parse_file(ctx: &mut Ctx, path: &Path) -> Result<Recipe> {
     let short = path
         .file_stem()
-        .context("File without filename")?
+        .context("File without file name")?
         .to_string_lossy();
 
     let source = read_to_string(path).context("Failed to read file")?;
