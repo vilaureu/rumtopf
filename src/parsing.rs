@@ -80,7 +80,7 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
             match replacement {
                 Ok(t) => t,
                 Err(err) => {
-                    Self::print_error(err, self.path, &mut self.ctx.any_error);
+                    Self::print_error(err, self.path, self.ctx);
                     caps[0].to_owned()
                 }
             }
@@ -93,7 +93,7 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
             match replacement {
                 Ok(t) => t,
                 Err(err) => {
-                    Self::print_error(err, self.path, &mut self.ctx.any_error);
+                    Self::print_error(err, self.path, self.ctx);
                     caps[0].to_owned()
                 }
             }
@@ -105,20 +105,19 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
         match self.replace(unescaped) {
             Ok(u) => Some(u),
             Err(err) => {
-                Self::print_error(err, self.path, &mut self.ctx.any_error);
+                Self::print_error(err, self.path, self.ctx);
                 None
             }
         }
     }
 
-    fn print_error(mut err: Error, path: &Path, any_error: &mut bool) {
+    fn print_error(mut err: Error, path: &Path, ctx: &mut Ctx) {
         err = err.context(format!(
             "Skipping parsing error in {}",
             path.to_string_lossy()
         ));
 
-        *any_error = true;
-        eprintln!("{err:#}");
+        ctx.print_error(err);
     }
 }
 

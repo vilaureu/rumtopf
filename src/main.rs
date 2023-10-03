@@ -35,14 +35,13 @@ fn main() -> Result<ExitCode> {
         if let Err(err) = write_recipe(&ctx, recipe, &recipes)
             .with_context(|| format!("Skipping writing recipe {}", recipe.title))
         {
-            ctx.any_error = true;
-            eprintln!("{err:#}");
+            ctx.print_error(err);
         }
     }
     if let Err(err) = create_index(&ctx, recipes) {
-        ctx.any_error = true;
-        eprintln!("{err:#}");
+        ctx.print_error(err);
     }
+    create_static(&mut ctx);
 
     Ok(if ctx.any_error {
         ExitCode::from(2)
@@ -81,8 +80,7 @@ fn process_source_dir(ctx: &mut Ctx) -> Result<Vec<Recipe>> {
         let recipe = match recipe {
             Ok(r) => r,
             Err(err) => {
-                ctx.any_error = true;
-                eprintln!("{err:#}");
+                ctx.print_error(err);
                 continue;
             }
         };

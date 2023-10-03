@@ -44,8 +44,13 @@ fn main() {
 fn process_directory(task: &Task, output: &mut impl Write) {
     writeln!(
         output,
-        "pub(crate) const {}: &[(&str, &str)] = &[",
-        task.name
+        "pub(crate) const {}: &[(&::std::primitive::str, &{})] = &[",
+        task.name,
+        if task.bytes {
+            "[::std::primitive::u8]"
+        } else {
+            "::std::primitive::str"
+        }
     )
     .expect(WRITE_MSG);
 
@@ -84,7 +89,7 @@ fn process_file(task: &Task, input: &DirEntry, output: &mut impl Write) {
     let path = path_os.to_str().expect("path is not unicode");
     writeln!(
         output,
-        r#"("{file_name}", include_{}!(concat!(env!("CARGO_MANIFEST_DIR"), "/{}"))),"#,
+        r#"("{file_name}", ::std::include_{}!(::std::concat!(::std::env!("CARGO_MANIFEST_DIR"), "/{}"))),"#,
         if task.bytes { "bytes" } else { "str" },
         path
     )
