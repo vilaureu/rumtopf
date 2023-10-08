@@ -2,7 +2,14 @@
     id="footer"
     class="d-flex flex-wrap justify-content-between align-items-center p-3 border-top mt-5 bg-light"
 >
-    <a class="col-md-6 text-decoration-none" href="#">IMPRINT</a>
+    <div class="col-md-6">
+        {{#each ctx.links}}
+        <a class="text-decoration-none" href="{{this.href}}">{{this.label}}</a>
+        {{#unless @last}}
+        •
+        {{/unless}}
+        {{/each}}
+    </div>
     <ul class="nav col-md-6 justify-content-end">
         <li class="nav-item">
             <a

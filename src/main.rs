@@ -28,6 +28,7 @@ fn main() -> Result<ExitCode> {
         reg,
         dest: args.destination,
         any_error: false,
+        links: args.link,
     };
 
     create_dir(&ctx.dest).with_context(|| {
@@ -125,11 +126,11 @@ fn handlebars_registry() -> Handlebars<'static> {
     reg
 }
 
-fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &Vec<Recipe>) -> Result<()> {
+fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &[Recipe]) -> Result<()> {
     let html = render(
         &ctx.reg,
         "recipe",
-        &json!({"recipe": recipe.recipe, "title": recipe.title, "recipes": recipes}),
+        &json!({"recipe": recipe.recipe, "title": recipe.title, "ctx": template_ctx(ctx, recipes)}),
     )?;
 
     // short was a valid file stem so it should be safe to use as a stem here
@@ -153,8 +154,19 @@ fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
         .open(ctx.dest.join("index.html"))
         .context("failed to create index.html file")?;
 
-    file.write_all(render(&ctx.reg, "index", &json!({"recipes": recipes}))?.as_bytes())
-        .context("failed to write index.html file")?;
+    file.write_all(
+        render(
+            &ctx.reg,
+            "index",
+            &json!({"ctx": template_ctx(ctx, &recipes)}),
+        )?
+        .as_bytes(),
+    )
+    .context("failed to write index.html file")?;
 
     Ok(())
+}
+
+fn template_ctx(ctx: &Ctx, recipes: &[Recipe]) -> serde_json::Value {
+    json!({"recipes": recipes, "links": ctx.links})
 }

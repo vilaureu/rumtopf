@@ -9,6 +9,7 @@ pub(crate) struct Ctx<'l> {
     pub(crate) reg: Handlebars<'l>,
     pub(crate) dest: PathBuf,
     pub(crate) any_error: bool,
+    pub(crate) links: Vec<Link>,
 }
 
 impl<'l> Ctx<'l> {
@@ -16,6 +17,12 @@ impl<'l> Ctx<'l> {
         self.any_error = true;
         eprintln!("{err:#}");
     }
+}
+
+#[derive(Clone, Serialize)]
+pub(crate) struct Link {
+    pub(crate) label: String,
+    pub(crate) href: String,
 }
 
 pub(crate) fn render<T>(reg: &Handlebars, name: &str, data: &T) -> Result<String>

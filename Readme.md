@@ -41,6 +41,13 @@ static assets.
 Simply copy the destination directory to your web server.
 Enjoy!
 
+## Use Case: Adding an Imprint
+
+To add an imprint, first, add your `imprint.html` to your source directory with
+your _Markdown_ recipes.
+Add the option `--link Imprint=imprint.html` to the `rumtopf` command arguments.
+This will generate a clickable link to the footer of every page.
+
 # License
 
 All sources of this project are licensed under the MIT license (see the

@@ -19,7 +19,7 @@
                         <h1 class="mb-0">Recipe Overview</h1>
                         <h6>
                             <code class="text-muted"
-                                >{{len recipes}} recipes available</code
+                                >{{len ctx.recipes}} recipes available</code
                             >
                         </h6>
 
@@ -28,7 +28,7 @@
                         <div
                             class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3"
                         >
-                            {{#each recipes}}
+                            {{#each ctx.recipes}}
                             <a
                                 class="col text-decoration-none"
                                 href="{{this.short}}.html"

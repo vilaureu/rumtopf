@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
+use anyhow::{Context, Result};
 use clap::Parser;
+
+use crate::utils::Link;
 
 /// A generator for a static recipe website.
 ///
@@ -13,4 +16,22 @@ pub(crate) struct Args {
     pub(crate) source: PathBuf,
     /// Directory to write generated website to.
     pub(crate) destination: PathBuf,
+    /// Link with label for footer.
+    ///
+    /// Values are specified in format "label=href" with label being the shown
+    /// text and href being the link.
+    /// Can be specified multiple times.
+    #[arg(short, long, value_parser=parse_link, value_name="LABEL>=<HREF")]
+    pub(crate) link: Vec<Link>,
+}
+
+/// Parse link of format `label=href`
+fn parse_link(arg: &str) -> Result<Link> {
+    let parts = arg
+        .split_once('=')
+        .with_context(|| format!(r#"link argument "{arg}" does not contain a '='"#))?;
+    Ok(Link {
+        label: parts.0.to_string(),
+        href: parts.1.to_string(),
+    })
 }
