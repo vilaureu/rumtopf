@@ -1,45 +1,36 @@
 <!DOCTYPE html>
 <html class="h-100">
     <head>
-        <meta charset="utf-8" />
         <title>Recipes</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link href="bootstrap.min.css" rel="stylesheet" />
-        <link href="rumtopf.css" rel="stylesheet" />
+        {{> head}}
     </head>
     <body class="d-flex flex-column h-100">
         {{> header}}
 
-        <div class="container">
+        <div class="container my-3">
             <div class="row">
-                <div class="col-xl-2"></div>
+                <div class="col-lg-1 col-xl-2"></div>
 
-                <div class="col-xl-8">
-                    <div class="px-2">
-                        <h1 class="mb-0">Recipe Overview</h1>
-                        <h6>
-                            <code class="text-muted"
-                                >{{len ctx.recipes}} recipes available</code
-                            >
-                        </h6>
-
-                        <hr class="mt-1" />
-
-                        <div
-                            class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3"
+                <div class="col-lg-10 col-xl-8">
+                    <h1 class="mb-0">Recipe Overview</h1>
+                    <h6>
+                        <code class="text-muted"
+                            >{{len ctx.recipes}} recipes available</code
                         >
-                            {{#each ctx.recipes}}
-                            <a
-                                class="col text-decoration-none"
-                                href="{{this.short}}.html"
-                                >{{this.title}}</a
-                            >
-                            {{/each}}
-                        </div>
+                    </h6>
+
+                    <hr class="mt-1" />
+
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                        {{#each ctx.recipes}}
+                        <a
+                            class="col text-decoration-none"
+                            href="{{this.short}}.html"
+                            >{{this.title}}</a
+                        >
+                        {{/each}}
                     </div>
                 </div>
-
-                <div class="col-xl-2"></div>
             </div>
         </div>
 
