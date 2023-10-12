@@ -10,6 +10,7 @@ pub(crate) struct Ctx<'l> {
     pub(crate) dest: PathBuf,
     pub(crate) any_error: bool,
     pub(crate) links: Vec<Link>,
+    pub(crate) footer: String,
 }
 
 impl<'l> Ctx<'l> {

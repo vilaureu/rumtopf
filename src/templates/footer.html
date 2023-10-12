@@ -1,5 +1,6 @@
 <footer class="container-fluid py-2 bg-light border-top mt-auto">
     <div class="d-flex flex-wrap justify-content-between align-items-center">
+        {{#if ctx.links}}
         <div class="pe-2">
             {{#each ctx.links}}
             <a class="text-decoration-none" href="{{this.href}}"
@@ -8,6 +9,10 @@
             {{#unless @last}} • {{/unless}}
             {{/each}}
         </div>
+        {{/if}}
+        {{#if ctx.footer}}
+        <div class="pe-2 text-muted">{{ctx.footer}}</div>
+        {{/if}}
         <ul class="nav justify-content-end">
             <li class="nav-item">
                 <a

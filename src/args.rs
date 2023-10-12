@@ -16,13 +16,16 @@ pub(crate) struct Args {
     pub(crate) source: PathBuf,
     /// Directory to write generated website to.
     pub(crate) destination: PathBuf,
-    /// Link with label for footer.
+    /// Add link to footer.
     ///
     /// Values are specified in format "label=href" with label being the shown
     /// text and href being the link.
     /// Can be specified multiple times.
     #[arg(short, long, value_parser=parse_link, value_name="LABEL>=<HREF")]
     pub(crate) link: Vec<Link>,
+    /// Add plain text to footer.
+    #[arg(short, long)]
+    pub(crate) footer: Option<String>,
 }
 
 /// Parse link of format `label=href`

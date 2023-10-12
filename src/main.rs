@@ -29,6 +29,7 @@ fn main() -> Result<ExitCode> {
         dest: args.destination,
         any_error: false,
         links: args.link,
+        footer: args.footer.unwrap_or_default(),
     };
 
     create_dir(&ctx.dest).with_context(|| {
@@ -168,5 +169,5 @@ fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
 }
 
 fn template_ctx(ctx: &Ctx, recipes: &[Recipe]) -> serde_json::Value {
-    json!({"recipes": recipes, "links": ctx.links})
+    json!({"recipes": recipes, "links": ctx.links, "footer": ctx.footer})
 }
