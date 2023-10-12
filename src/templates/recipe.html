@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html class="h-100">
     <head>
-        <title>{{title}} Recipe</title>
+        <title>
+            {{title}} Recipe
+            {{#if ctx.custom_title}}— {{ctx.title}}{{/if}}
+        </title>
         {{> head}}
     </head>
     <body class="d-flex flex-column h-100">

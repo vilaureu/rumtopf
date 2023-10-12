@@ -28,6 +28,7 @@ fn main() -> Result<ExitCode> {
         reg,
         dest: args.destination,
         any_error: false,
+        title: args.title,
         links: args.link,
         footer: args.footer.unwrap_or_default(),
     };
@@ -169,5 +170,11 @@ fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
 }
 
 fn template_ctx(ctx: &Ctx, recipes: &[Recipe]) -> serde_json::Value {
-    json!({"recipes": recipes, "links": ctx.links, "footer": ctx.footer})
+    json!({
+        "recipes": recipes,
+        "links": ctx.links,
+        "footer": ctx.footer,
+        "title": ctx.title.as_deref().unwrap_or_else(|| "Recipes"),
+        "custom_title": ctx.title.is_some()
+    })
 }

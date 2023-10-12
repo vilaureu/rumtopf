@@ -9,6 +9,7 @@ pub(crate) struct Ctx<'l> {
     pub(crate) reg: Handlebars<'l>,
     pub(crate) dest: PathBuf,
     pub(crate) any_error: bool,
+    pub(crate) title: Option<String>,
     pub(crate) links: Vec<Link>,
     pub(crate) footer: String,
 }

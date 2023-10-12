@@ -16,6 +16,9 @@ pub(crate) struct Args {
     pub(crate) source: PathBuf,
     /// Directory to write generated website to.
     pub(crate) destination: PathBuf,
+    /// Add custom website title.
+    #[arg(short, long)]
+    pub(crate) title: Option<String>,
     /// Add link to footer.
     ///
     /// Values are specified in format "label=href" with label being the shown
