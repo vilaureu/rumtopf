@@ -48,6 +48,19 @@ your _Markdown_ recipes.
 Add the option `--link Imprint=imprint.html` to the `rumtopf` command arguments.
 This will generate a clickable link to the footer of every page.
 
+## Use Case: Overriding Templates
+
+The used HTML templates can be overridden.
+These templates use the
+[_Handlebars_](https://docs.rs/handlebars/latest/handlebars/index.html)
+syntax.
+The built-in ones can be found in `src/templates` and might be used as
+reference.
+To override templates, simply create a new directory and put the replacements as `.html` files in it.
+The file name stems are taken as names for the templates.
+Then provide the `--templates` option with the new directory as an additional
+command-line argument to `rumtopf`.
+
 # License
 
 All sources of this project are licensed under the MIT license (see the

@@ -22,7 +22,7 @@ use utils::*;
 
 fn main() -> Result<ExitCode> {
     let args = Args::parse();
-    let reg = handlebars_registry();
+    let reg = handlebars_registry(args.templates.as_deref())?;
     let mut ctx = Ctx {
         src: args.source,
         reg,
@@ -116,7 +116,7 @@ fn process_source_entry(ctx: &mut Ctx, entry: &DirEntry) -> Result<Option<Recipe
     Ok(Some(parse_file(ctx, &path)?))
 }
 
-fn handlebars_registry() -> Handlebars<'static> {
+fn handlebars_registry(override_path: Option<&Path>) -> Result<Handlebars<'static>> {
     let mut reg = Handlebars::new();
     reg.set_strict_mode(true);
 
@@ -125,7 +125,50 @@ fn handlebars_registry() -> Handlebars<'static> {
             .expect("failed to register template");
     }
 
-    reg
+    if let Some(path) = override_path {
+        let dir = read_dir(path).with_context(|| {
+            format!(
+                "Failed to read template directory {}",
+                path.to_string_lossy()
+            )
+        })?;
+
+        for entry in dir {
+            let entry = entry.with_context(|| {
+                format!(
+                    "Failed to list contents of template directory {}",
+                    path.to_string_lossy()
+                )
+            })?;
+            process_template(&entry, &mut reg).with_context(|| {
+                format!(
+                    "Failed to process template file {}",
+                    entry.path().to_string_lossy()
+                )
+            })?;
+        }
+    }
+
+    Ok(reg)
+}
+
+fn process_template(entry: &DirEntry, reg: &mut Handlebars) -> Result<()> {
+    let path = entry.path();
+    let name = path
+        .file_stem()
+        .context("File without file name")?
+        .to_string_lossy();
+    if name.starts_with('.') {
+        return Ok(());
+    }
+
+    let typ = entry.file_type().context("Failed to query file type")?;
+    if !typ.is_file() {
+        return Ok(());
+    }
+
+    reg.register_template_file(&name, &path)?;
+    Ok(())
 }
 
 fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &[Recipe]) -> Result<()> {

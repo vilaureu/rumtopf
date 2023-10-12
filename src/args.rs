@@ -29,6 +29,9 @@ pub(crate) struct Args {
     /// Add plain text to footer.
     #[arg(short, long)]
     pub(crate) footer: Option<String>,
+    #[arg(short('m'), long)]
+    /// Directory with HTML templates to override built-in ones.
+    pub(crate) templates: Option<PathBuf>,
 }
 
 /// Parse link of format `label=href`
