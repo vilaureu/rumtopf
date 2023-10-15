@@ -56,7 +56,8 @@ These templates use the
 syntax.
 The built-in ones can be found in `src/templates` and might be used as
 reference.
-To override templates, simply create a new directory and put the replacements as `.html` files in it.
+To override templates, simply create a new directory and put the replacements as
+`.html` files in it.
 The file name stems are taken as names for the templates.
 Then provide the `--templates` option with the new directory as an additional
 command-line argument to `rumtopf`.

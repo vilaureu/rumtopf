@@ -1,0 +1,42 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        id: checkout
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/
+            ~/.cargo/.*
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+      - name: Build
+        run: cargo build --verbose
+      - name: Unit Test
+        timeout-minutes: 5
+        run: cargo test --verbose
+      - name: Integration Test
+        timeout-minutes: 5
+        run: ./target/debug/rumtopf ./recipes "$RUNNER_TEMP"/website
+      - name: Clippy
+        if: "!cancelled() && steps.checkout.outcome == 'success'"
+        run: cargo clippy --no-deps -- --deny=warnings
+      - name: Check formatting
+        if: "!cancelled() && steps.checkout.outcome == 'success'"
+        run: cargo fmt --check

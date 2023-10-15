@@ -217,7 +217,7 @@ fn template_ctx(ctx: &Ctx, recipes: &[Recipe]) -> serde_json::Value {
         "recipes": recipes,
         "links": ctx.links,
         "footer": ctx.footer,
-        "title": ctx.title.as_deref().unwrap_or_else(|| "Recipes"),
+        "title": ctx.title.as_deref().unwrap_or("Recipes"),
         "custom_title": ctx.title.is_some()
     })
 }
