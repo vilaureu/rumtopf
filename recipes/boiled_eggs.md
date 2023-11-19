@@ -17,5 +17,5 @@ It only exists to test edge cases in the parser and escape code.
 _You know what to do!_
 
 ```
-You will have <i>successfully</i> **cooked** &lt;{{100}}&gt; eggs!
+You will have <i>successfully</i> **cooked** &lt;{{100}}&gt; eggs! {{100}}!
 ```

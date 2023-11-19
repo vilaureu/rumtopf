@@ -52,8 +52,9 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
     pub(crate) fn new(iter: I, ctx: &'l mut Ctx<'c>, path: &'l Path) -> Self {
         Self {
             iter,
-            scaling_re: Regex::new(r"\{\{\s*(.+)\s*\}\}").expect("failed to compile scaling regex"),
-            servings_re: Regex::new(r"\{\{(.+)\s+servings?\s*\}\}")
+            scaling_re: Regex::new(r"\{\{\s*([^}]+)\s*\}\}")
+                .expect("failed to compile scaling regex"),
+            servings_re: Regex::new(r"\{\{([^}]+)\s+servings?\s*\}\}")
                 .expect("failed to compile servings regex"),
             ctx,
             path,
