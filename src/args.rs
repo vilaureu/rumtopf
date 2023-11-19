@@ -32,6 +32,11 @@ pub(crate) struct Args {
     #[arg(short('m'), long)]
     /// Directory with HTML templates to override built-in ones.
     pub(crate) templates: Option<PathBuf>,
+    /// Remove entire destination directory before generating the website.
+    ///
+    /// This option removes all contents of the destination. Use with caution.
+    #[arg(short, long)]
+    pub(crate) remove: bool,
 }
 
 /// Parse link of format `label=href`

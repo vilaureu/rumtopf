@@ -4,7 +4,7 @@ mod parsing;
 mod utils;
 
 use std::{
-    fs::{create_dir, read_dir, DirEntry, File},
+    fs::{create_dir, read_dir, remove_dir_all, DirEntry, File},
     io::Write,
     path::Path,
     process::ExitCode,
@@ -33,6 +33,14 @@ fn main() -> Result<ExitCode> {
         footer: args.footer.unwrap_or_default(),
     };
 
+    if args.remove {
+        remove_dir_all(&ctx.dest).with_context(|| {
+            format!(
+                "Failed to remove destination directory {}",
+                ctx.dest.to_string_lossy()
+            )
+        })?;
+    }
     create_dir(&ctx.dest).with_context(|| {
         format!(
             "Failed to create destination directory {}",
