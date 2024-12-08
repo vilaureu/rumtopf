@@ -1,7 +1,8 @@
 use std::{fs::read_to_string, path::Path};
 
 use anyhow::{Context, Error, Result};
-use pulldown_cmark::{escape::escape_html, html::push_html, Event, HeadingLevel, Parser, Tag};
+use pulldown_cmark::{html::push_html, Event, HeadingLevel, Parser, Tag, TagEnd};
+use pulldown_cmark_escape::escape_html;
 use regex::{Captures, Regex};
 use serde::Serialize;
 use serde_json::json;
@@ -146,11 +147,18 @@ where
 
                 Event::Html(format!("<code>{}</code>", replaced).into())
             }
-            e if matches!(e, Event::Start(Tag::Heading(HeadingLevel::H1, _, _))) => {
+            e if matches!(
+                e,
+                Event::Start(Tag::Heading {
+                    level: HeadingLevel::H1,
+                    ..
+                })
+            ) =>
+            {
                 self.in_title = true;
                 e
             }
-            e if matches!(e, Event::End(Tag::Heading(HeadingLevel::H1, _, _))) => {
+            e if matches!(e, Event::End(TagEnd::Heading(HeadingLevel::H1))) => {
                 self.in_title = false;
                 e
             }
