@@ -125,7 +125,7 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
     }
 }
 
-impl<'l, 'c, I> Iterator for ServingWrapper<'l, 'c, I>
+impl<'l, I> Iterator for ServingWrapper<'l, '_, I>
 where
     I: Iterator<Item = Event<'l>> + 'l,
 {

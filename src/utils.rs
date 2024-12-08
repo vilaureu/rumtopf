@@ -14,7 +14,7 @@ pub(crate) struct Ctx<'l> {
     pub(crate) footer: String,
 }
 
-impl<'l> Ctx<'l> {
+impl Ctx<'_> {
     pub(crate) fn print_error(&mut self, err: impl Display) {
         self.any_error = true;
         eprintln!("{err:#}");
