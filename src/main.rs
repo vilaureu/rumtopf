@@ -188,7 +188,7 @@ fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &[Recipe]) -> Result<()> {
 
     // short was a valid file stem so it should be safe to use as a stem here
     // too.
-    let path = ctx.dest.join(recipe.short.to_string() + ".html");
+    let path = ctx.dest.join(recipe.stem.to_string() + ".html");
     let mut file = File::options()
         .write(true)
         .create_new(true)

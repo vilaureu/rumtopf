@@ -12,16 +12,22 @@ use crate::utils::*;
 #[derive(Serialize)]
 pub(crate) struct Recipe {
     pub(crate) title: String,
+    pub(crate) stem: String,
     pub(crate) short: String,
     #[serde(skip)]
     pub(crate) recipe: String,
+    pub(crate) lang: Option<String>,
 }
 
 pub(crate) fn parse_file(ctx: &mut Ctx, path: &Path) -> Result<Recipe> {
-    let short = path
+    let stem = path
         .file_stem()
         .context("File without file name")?
         .to_string_lossy();
+    let (short, lang) = match stem.rsplit_once(".") {
+        Some((short, lang)) => (short.to_string(), Some(lang.to_string())),
+        None => (stem.to_string(), None),
+    };
 
     let source = read_to_string(path).context("Failed to read file")?;
 
@@ -31,8 +37,10 @@ pub(crate) fn parse_file(ctx: &mut Ctx, path: &Path) -> Result<Recipe> {
 
     Ok(Recipe {
         title: parser.title,
-        short: short.to_string(),
+        stem: stem.to_string(),
+        short,
         recipe,
+        lang,
     })
 }
 
