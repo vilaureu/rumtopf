@@ -14,22 +14,48 @@
                 <div class="col-lg-10 col-xl-8">
                     <h1 class="mb-0">Recipe Overview</h1>
                     <h6>
-                        <code class="text-muted"
-                            >{{len ctx.recipes}} recipes available</code
-                        >
+                        <code class="text-muted">TODO recipes available</code>
                     </h6>
 
                     <hr class="mt-1" />
 
+                    {{#if recipes.this_lang}}
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                        {{#each ctx.recipes}}
+                        {{#each recipes.this_lang}}
                         <a
                             class="col text-decoration-none"
                             href="./{{this.stem}}.html"
-                            >{{this.title}}</a
                         >
+                            {{this.title}}
+                        </a>
                         {{/each}}
                     </div>
+                    {{/if}} {{#each recipes.others.by_lang}}
+                    <div class="row">
+                        <h2>In language <i>{{@key}}</i></h2>
+                    </div>
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                        {{#each this}}
+                        <a
+                            class="col text-decoration-none"
+                            href="./{{this.stem}}.html"
+                        >
+                            {{this.title}}
+                        </a>
+                        {{/each}}
+                    </div>
+                    {{/each}} {{#if recipes.others.uncat}}
+                    <div class="row">
+                        <h2>Uncategorized</h2>
+                    </div>
+                    {{#each recipes.others.uncat}}
+                    <a
+                        class="col text-decoration-none"
+                        href="./{{this.stem}}.html"
+                    >
+                        {{this.title}}
+                    </a>
+                    {{/each}} {{/if}}
                 </div>
             </div>
         </div>

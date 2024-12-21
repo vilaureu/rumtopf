@@ -4,6 +4,7 @@ mod parsing;
 mod utils;
 
 use std::{
+    collections::HashMap,
     fs::{create_dir, read_dir, remove_dir_all, DirEntry, File},
     io::Write,
     path::Path,
@@ -17,6 +18,7 @@ use clap::Parser;
 use files::*;
 use handlebars::Handlebars;
 use parsing::*;
+use serde::Serialize;
 use serde_json::json;
 use utils::*;
 
@@ -51,13 +53,19 @@ fn main() -> Result<ExitCode> {
     // Copy source files after creating static files to allow overriding them.
     let recipes = process_source_dir(&mut ctx)?;
     for recipe in &recipes {
-        if let Err(err) = write_recipe(&ctx, recipe, &recipes)
+        if let Err(err) = write_recipe(&ctx, recipe)
             .with_context(|| format!("Skipping writing recipe {}", recipe.title))
         {
             ctx.print_error(err);
         }
     }
-    if let Err(err) = create_index(&ctx, recipes) {
+    let by_lang = order_by_lang(&recipes);
+    for lang in by_lang.by_lang.keys() {
+        if let Err(err) = create_index(&ctx, by_lang.clone(), Some(lang)) {
+            ctx.print_error(err);
+        }
+    }
+    if let Err(err) = create_index(&ctx, by_lang.clone(), None) {
         ctx.print_error(err);
     }
 
@@ -179,11 +187,11 @@ fn process_template(entry: &DirEntry, reg: &mut Handlebars) -> Result<()> {
     Ok(())
 }
 
-fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &[Recipe]) -> Result<()> {
+fn write_recipe(ctx: &Ctx, recipe: &Recipe) -> Result<()> {
     let html = render(
         &ctx.reg,
         "recipe",
-        &json!({"recipe": recipe.recipe, "title": recipe.title, "ctx": template_ctx(ctx, recipes)}),
+        &json!({"recipe": recipe.recipe, "title": recipe.title, "ctx": template_ctx(ctx)}),
     )?;
 
     // short was a valid file stem so it should be safe to use as a stem here
@@ -200,18 +208,62 @@ fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &[Recipe]) -> Result<()> {
     Ok(())
 }
 
-fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
+type ByLang<'r> = HashMap<&'r str, Vec<&'r Recipe>>;
+
+#[derive(Clone, Serialize)]
+struct LangRecipes<'r> {
+    by_lang: ByLang<'r>,
+    uncat: Vec<&'r Recipe>,
+}
+
+fn order_by_lang(recipes: &[Recipe]) -> LangRecipes {
+    let mut by_lang = ByLang::new();
+    let mut uncat = Vec::new();
+    for recipe in recipes {
+        match recipe.lang {
+            Some(ref lang) => by_lang.entry(lang).or_default().push(recipe),
+            None => uncat.push(recipe),
+        }
+    }
+    LangRecipes { by_lang, uncat }
+}
+
+#[derive(Serialize)]
+struct IndexRecipes<'r> {
+    this_lang: Vec<&'r Recipe>,
+    others: LangRecipes<'r>,
+}
+
+fn create_index(ctx: &Ctx, mut lang_recipes: LangRecipes, lang: Option<&str>) -> Result<()> {
+    let this_lang = match lang {
+        Some(lang) => lang_recipes
+            .by_lang
+            .remove(lang)
+            .expect("no recipes for language"),
+        None => vec![],
+    };
+    let recipes = IndexRecipes {
+        this_lang,
+        others: lang_recipes,
+    };
+
+    let mut name = "index".to_string();
+    if let Some(lang) = lang {
+        name += ".";
+        name += lang;
+    }
+    name += ".html";
     let mut file = File::options()
         .write(true)
         .create_new(true)
-        .open(ctx.dest.join("index.html"))
-        .context("failed to create index.html file")?;
+        .open(ctx.dest.join(name))
+        .with_context(|| "failed to create {name} file")?;
 
     file.write_all(
         render(
             &ctx.reg,
             "index",
-            &json!({"ctx": template_ctx(ctx, &recipes)}),
+            &json!({"ctx": template_ctx(ctx), "recipes": &recipes}),
         )?
         .as_bytes(),
     )
@@ -220,9 +272,8 @@ fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
     Ok(())
 }
 
-fn template_ctx(ctx: &Ctx, recipes: &[Recipe]) -> serde_json::Value {
+fn template_ctx(ctx: &Ctx) -> serde_json::Value {
     json!({
-        "recipes": recipes,
         "links": ctx.links,
         "footer": ctx.footer,
         "title": ctx.title.as_deref().unwrap_or("Recipes"),
