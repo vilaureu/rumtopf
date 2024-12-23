@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write};
+use std::{collections::HashSet, fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -150,6 +150,12 @@ fn create_index(
 }
 
 fn write_lang_select(ctx: &mut Ctx<'_>, recipes: &[Recipe], langs: &[LangPage]) -> Result<()> {
+    let recipe_count = recipes
+        .iter()
+        .map(|r| &r.short)
+        .collect::<HashSet<_>>()
+        .len();
+
     let mut file = File::options()
         .write(true)
         .create_new(true)
@@ -164,7 +170,8 @@ fn write_lang_select(ctx: &mut Ctx<'_>, recipes: &[Recipe], langs: &[LangPage]) 
                 "ctx": template_ctx(ctx),
                 "recipes": recipes,
                 "langs": langs,
-                "index": "index.html"
+                "index": "index.html",
+                "recipe_count": recipe_count,
             }),
         )?
         .as_bytes(),
@@ -189,6 +196,6 @@ fn template_ctx(ctx: &Ctx) -> serde_json::Value {
         "links": ctx.links,
         "footer": ctx.footer,
         "title": ctx.title.as_deref().unwrap_or("Recipes"),
-        "custom_title": ctx.title.is_some()
+        "custom_title": ctx.title.is_some(),
     })
 }
