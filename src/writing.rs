@@ -1,13 +1,34 @@
-use std::{collections::HashSet, fs::File, io::Write};
+use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
+use serde::Serialize;
 use serde_json::json;
 
-use crate::{render, Ctx, Recipe};
+use crate::{render, Ctx, Recipe, Rtx};
 
-pub(crate) fn write_recipes(ctx: &mut Ctx, recipes: &[Recipe], default_lang: &str) {
-    for recipe in recipes {
-        if let Err(err) = write_recipe(ctx, recipe, default_lang)
+#[derive(Clone, Serialize)]
+struct LangPage<'r> {
+    lang: Option<&'r str>,
+    link: String,
+}
+
+pub(crate) fn write_recipes(ctx: &mut Ctx, rtx: &Rtx) {
+    for recipe in rtx.recipes {
+        let langs = rtx
+            .recipes
+            .iter()
+            .filter(|r| r.short == recipe.short && r.lang != recipe.lang)
+            .map(|r| LangPage {
+                lang: r.lang.as_deref(),
+                link: r.stem.to_string() + ".html",
+            })
+            .collect::<Vec<_>>();
+        let index = if rtx.langs.len() < 2 {
+            "index.html".to_string()
+        } else {
+            index_for_lang(recipe.lang.as_deref())
+        };
+        if let Err(err) = write_recipe(ctx, recipe, rtx.default_lang, &langs, &index)
             .with_context(|| format!("Skipping writing recipe {}", recipe.title))
         {
             ctx.print_error(err);
@@ -15,7 +36,13 @@ pub(crate) fn write_recipes(ctx: &mut Ctx, recipes: &[Recipe], default_lang: &st
     }
 }
 
-fn write_recipe(ctx: &Ctx, recipe: &Recipe, default_lang: &str) -> Result<()> {
+fn write_recipe(
+    ctx: &Ctx,
+    recipe: &Recipe,
+    default_lang: &str,
+    langs: &[LangPage],
+    index: &str,
+) -> Result<()> {
     let html = render(
         &ctx.reg,
         "recipe",
@@ -23,7 +50,9 @@ fn write_recipe(ctx: &Ctx, recipe: &Recipe, default_lang: &str) -> Result<()> {
             "recipe": recipe.recipe,
             "title": recipe.title,
             "ctx": template_ctx(ctx),
+            "index": index,
             "lang": recipe.lang.as_deref().unwrap_or(default_lang),
+            "langs": langs,
         }),
     )?;
 
@@ -41,29 +70,49 @@ fn write_recipe(ctx: &Ctx, recipe: &Recipe, default_lang: &str) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn write_indices(ctx: &mut Ctx<'_>, recipes: &[Recipe]) {
-    let langs = recipes
-        .iter()
-        .map(|r| r.lang.as_deref())
-        .collect::<HashSet<_>>();
-    if langs.len() <= 1 {
-        if let Err(err) = create_index(ctx, recipes, None) {
+pub(crate) fn write_indices(ctx: &mut Ctx<'_>, rtx: &Rtx) {
+    if rtx.langs.len() < 2 {
+        if let Err(err) = create_index(ctx, rtx.recipes, None, Default::default()) {
             ctx.print_error(err);
         }
     } else {
-        for lang in langs.iter().filter_map(|r| r.as_deref()) {
-            if let Err(err) = create_index(ctx, recipes, Some(lang)) {
+        let langs = rtx
+            .langs
+            .iter()
+            .filter_map(|&l| l)
+            .map(|l| {
+                (
+                    l,
+                    LangPage {
+                        lang: Some(l),
+                        link: index_for_lang(Some(l)),
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        for &(lang, _) in langs.iter() {
+            let langs = langs
+                .iter()
+                .map(|(_, lang)| lang)
+                .filter(|l| l.lang != Some(lang))
+                .collect::<Vec<_>>();
+            if let Err(err) = create_index(ctx, rtx.recipes, Some(lang), &langs) {
                 ctx.print_error(err);
             }
         }
-        let langs = langs.iter().filter_map(|&l| l).collect::<Vec<_>>();
-        if let Err(err) = write_lang_select(ctx, recipes, &langs) {
+        let langs = langs.into_iter().map(|(_, lang)| lang).collect::<Vec<_>>();
+        if let Err(err) = write_lang_select(ctx, rtx.recipes, &langs) {
             ctx.print_error(err);
         }
     }
 }
 
-fn create_index(ctx: &Ctx, recipes: &[Recipe], lang: Option<&str>) -> Result<()> {
+fn create_index(
+    ctx: &Ctx,
+    recipes: &[Recipe],
+    lang: Option<&str>,
+    langs: &[&LangPage],
+) -> Result<()> {
     let mut this_lang = Vec::new();
     let mut other_lang = Vec::new();
     for recipe in recipes {
@@ -74,12 +123,7 @@ fn create_index(ctx: &Ctx, recipes: &[Recipe], lang: Option<&str>) -> Result<()>
         }
     }
 
-    let mut name = "index".to_string();
-    if let Some(lang) = lang {
-        name += ".";
-        name += lang;
-    }
-    name += ".html";
+    let name = index_for_lang(lang);
     let mut file = File::options()
         .write(true)
         .create_new(true)
@@ -90,7 +134,13 @@ fn create_index(ctx: &Ctx, recipes: &[Recipe], lang: Option<&str>) -> Result<()>
         render(
             &ctx.reg,
             "index",
-            &json!({"ctx": template_ctx(ctx), "this_lang": &this_lang, "other_lang": &other_lang}),
+            &json!({
+                "ctx": template_ctx(ctx),
+                "this_lang": &this_lang,
+                "other_lang": &other_lang,
+                "index": "index.html",
+                "langs": langs,
+            }),
         )?
         .as_bytes(),
     )
@@ -99,7 +149,7 @@ fn create_index(ctx: &Ctx, recipes: &[Recipe], lang: Option<&str>) -> Result<()>
     Ok(())
 }
 
-fn write_lang_select(ctx: &mut Ctx<'_>, recipes: &[Recipe], langs: &[&str]) -> Result<()> {
+fn write_lang_select(ctx: &mut Ctx<'_>, recipes: &[Recipe], langs: &[LangPage]) -> Result<()> {
     let mut file = File::options()
         .write(true)
         .create_new(true)
@@ -110,13 +160,28 @@ fn write_lang_select(ctx: &mut Ctx<'_>, recipes: &[Recipe], langs: &[&str]) -> R
         render(
             &ctx.reg,
             "lang",
-            &json!({"ctx": template_ctx(ctx), "recipes": recipes, "langs": langs}),
+            &json!({
+                "ctx": template_ctx(ctx),
+                "recipes": recipes,
+                "langs": langs,
+                "index": "index.html"
+            }),
         )?
         .as_bytes(),
     )
     .context("failed to write index.html file")?;
 
     Ok(())
+}
+
+fn index_for_lang(lang: Option<&str>) -> String {
+    let mut name = "index".to_string();
+    if let Some(lang) = lang {
+        name += ".";
+        name += lang;
+    }
+    name += ".html";
+    name
 }
 
 fn template_ctx(ctx: &Ctx) -> serde_json::Value {

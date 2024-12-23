@@ -1,10 +1,50 @@
-<header class="p-3 bg-light border-bottom">
-    <div class="d-flex flex-wrap align-items-center justify-content-center">
-        <a
-            class="fs-4 text-decoration-none text-black"
-            href="{{#if lang}}index.{{lang}}.html{{else}}index.html{{/if}}"
-        >
-            {{ctx.title}}
-        </a>
+<header class="py-2 bg-light border-bottom">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-1 col-xl-2"></div>
+
+            <div class="col-lg-10 col-xl-8">
+                <div class="row">
+                    <div class="col-md-3 d-none d-md-block"></div>
+                    <div
+                        class="py-1 col-md-6 col d-md-flex justify-content-center"
+                    >
+                        <a
+                            class="fs-4 text-decoration-none text-black"
+                            href="{{index}}"
+                        >
+                            {{ctx.title}}
+                        </a>
+                    </div>
+                    <div class="col d-flex justify-content-end">
+                        {{#if langs}}
+                        <div class="dropdown">
+                            <button
+                                class="btn btn-light dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                            >
+                                Language
+                            </button>
+                            <ul class="dropdown-menu">
+                                {{#each langs}}
+                                <li>
+                                    <a
+                                        class="dropdown-item"
+                                        href="{{this.link}}"
+                                    >
+                                        {{#if this.lang}} {{this.lang}} {{else}}
+                                        uncategorized {{/if}}
+                                    </a>
+                                </li>
+                                {{/each}}
+                            </ul>
+                        </div>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </header>

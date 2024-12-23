@@ -1,8 +1,10 @@
-use std::{fmt::Display, path::PathBuf};
+use std::{collections::HashSet, fmt::Display, path::PathBuf};
 
 use anyhow::{Context, Result};
 use handlebars::Handlebars;
 use serde::Serialize;
+
+use crate::Recipe;
 
 pub(crate) struct Ctx<'l> {
     pub(crate) src: PathBuf,
@@ -25,6 +27,26 @@ impl Ctx<'_> {
 pub(crate) struct Link {
     pub(crate) label: String,
     pub(crate) href: String,
+}
+
+pub(crate) struct Rtx<'r> {
+    pub(crate) recipes: &'r [Recipe],
+    pub(crate) default_lang: &'r str,
+    pub(crate) langs: HashSet<Option<&'r str>>,
+}
+
+impl<'r> Rtx<'r> {
+    pub(crate) fn new(recipes: &'r [Recipe], default_lang: &'r str) -> Self {
+        let langs = recipes
+            .iter()
+            .map(|r| r.lang.as_deref())
+            .collect::<HashSet<_>>();
+        Self {
+            recipes,
+            default_lang,
+            langs,
+        }
+    }
 }
 
 pub(crate) fn render<T>(reg: &Handlebars, name: &str, data: &T) -> Result<String>

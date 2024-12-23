@@ -42,9 +42,10 @@ fn main() -> Result<ExitCode> {
     let recipes = process_source_dir(&mut ctx)?;
     // TODO: recipes.sort();
     let default_lang = calc_default_lang(args.lang, &recipes);
+    let rtx = Rtx::new(&recipes, &default_lang);
 
-    write_recipes(&mut ctx, &recipes, &default_lang);
-    write_indices(&mut ctx, &recipes);
+    write_recipes(&mut ctx, &rtx);
+    write_indices(&mut ctx, &rtx);
 
     Ok(if ctx.any_error {
         ExitCode::from(2)
