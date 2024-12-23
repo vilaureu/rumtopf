@@ -12,27 +12,26 @@
                 <div class="col-lg-1 col-xl-2"></div>
 
                 <div class="col-lg-10 col-xl-8">
-                    <h1 class="mb-0">Recipe Overview</h1>
+                    <h1 class="mb-0">Select a Language</h1>
                     <h6>
                         <code class="text-muted">TODO recipes available</code>
                     </h6>
 
                     <hr class="mt-1" />
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                        {{#each this_lang}}
+                        {{#each langs}}
                         <a
                             class="col text-decoration-none"
-                            href="./{{this.stem}}.html"
+                            href="./index.{{this}}.html"
                         >
-                            {{this.title}}
+                            {{this}}
                         </a>
                         {{/each}}
                     </div>
 
-                    {{#if other_lang}}
-                    <hr class="mt-3 mb-3" />
+                    <hr />
                     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                        {{#each other_lang}}
+                        {{#each recipes}}
                         <a
                             class="col text-decoration-none"
                             href="./{{this.stem}}.html"
@@ -43,7 +42,6 @@
                         </a>
                         {{/each}}
                     </div>
-                    {{/if}}
                 </div>
             </div>
         </div>
