@@ -39,8 +39,8 @@ fn main() -> Result<ExitCode> {
     create_static(&mut ctx);
 
     // Copy source files after creating static files to allow overriding them.
-    let recipes = process_source_dir(&mut ctx)?;
-    // TODO: recipes.sort();
+    let mut recipes = process_source_dir(&mut ctx)?;
+    recipes.sort_unstable();
     let default_lang = calc_default_lang(args.lang, &recipes);
     let rtx = Rtx::new(&recipes, &default_lang);
 

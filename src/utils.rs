@@ -32,15 +32,18 @@ pub(crate) struct Link {
 pub(crate) struct Rtx<'r> {
     pub(crate) recipes: &'r [Recipe],
     pub(crate) default_lang: &'r str,
-    pub(crate) langs: HashSet<Option<&'r str>>,
+    pub(crate) langs: Vec<Option<&'r str>>,
 }
 
 impl<'r> Rtx<'r> {
     pub(crate) fn new(recipes: &'r [Recipe], default_lang: &'r str) -> Self {
-        let langs = recipes
+        let mut langs = recipes
             .iter()
             .map(|r| r.lang.as_deref())
-            .collect::<HashSet<_>>();
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        langs.sort_unstable();
         Self {
             recipes,
             default_lang,

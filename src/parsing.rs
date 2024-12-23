@@ -19,6 +19,26 @@ pub(crate) struct Recipe {
     pub(crate) lang: Option<String>,
 }
 
+impl PartialEq for Recipe {
+    fn eq(&self, other: &Self) -> bool {
+        self.stem == other.stem
+    }
+}
+
+impl Eq for Recipe {}
+
+impl Ord for Recipe {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.stem.cmp(&other.stem)
+    }
+}
+
+impl PartialOrd for Recipe {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 pub(crate) fn parse_file(ctx: &mut Ctx, path: &Path) -> Result<Recipe> {
     let stem = path
         .file_stem()
