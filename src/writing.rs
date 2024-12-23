@@ -5,9 +5,9 @@ use serde_json::json;
 
 use crate::{render, Ctx, Recipe};
 
-pub(crate) fn write_recipes(ctx: &mut Ctx, recipes: &[Recipe]) {
+pub(crate) fn write_recipes(ctx: &mut Ctx, recipes: &[Recipe], default_lang: &str) {
     for recipe in recipes {
-        if let Err(err) = write_recipe(ctx, recipe)
+        if let Err(err) = write_recipe(ctx, recipe, default_lang)
             .with_context(|| format!("Skipping writing recipe {}", recipe.title))
         {
             ctx.print_error(err);
@@ -15,11 +15,16 @@ pub(crate) fn write_recipes(ctx: &mut Ctx, recipes: &[Recipe]) {
     }
 }
 
-fn write_recipe(ctx: &Ctx, recipe: &Recipe) -> Result<()> {
+fn write_recipe(ctx: &Ctx, recipe: &Recipe, default_lang: &str) -> Result<()> {
     let html = render(
         &ctx.reg,
         "recipe",
-        &json!({"recipe": recipe.recipe, "title": recipe.title, "ctx": template_ctx(ctx)}),
+        &json!({
+            "recipe": recipe.recipe,
+            "title": recipe.title,
+            "ctx": template_ctx(ctx),
+            "lang": recipe.lang.as_deref().unwrap_or(default_lang),
+        }),
     )?;
 
     // short was a valid file stem so it should be safe to use as a stem here

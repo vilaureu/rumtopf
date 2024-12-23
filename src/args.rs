@@ -37,6 +37,9 @@ pub(crate) struct Args {
     /// This option removes all contents of the destination. Use with caution.
     #[arg(short, long)]
     pub(crate) remove: bool,
+    /// Set language for language selection index and uncategorized recipes.
+    #[arg(short = 'g', long)]
+    pub(crate) lang: Option<String>,
 }
 
 /// Parse link of format `label=href`

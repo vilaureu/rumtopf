@@ -25,7 +25,9 @@ function calc_recipe() {
   for (const elem of scalings) {
     let base = parseFloat(elem.dataset["base"]);
     if (Number.isNaN(base)) continue;
-    elem.textContent = round(factor * base);
+    elem.textContent = round(factor * base).toLocaleString(
+      document.documentElement.lang
+    );
   }
   for (const elem of inputs) {
     if (elem instanceof HTMLInputElement) elem.value = servings;
