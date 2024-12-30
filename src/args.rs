@@ -40,6 +40,9 @@ pub(crate) struct Args {
     /// Set language for language selection index and uncategorized recipes.
     #[arg(short = 'g', long, default_value = "en")]
     pub(crate) lang: String,
+    /// Custom localization file to override the built-in one.
+    #[arg(short = 'n', long)]
+    pub(crate) l10n: Option<PathBuf>,
 }
 
 /// Parse link of format `label=href`

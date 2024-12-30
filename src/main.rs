@@ -25,7 +25,10 @@ use writing::{write_indices, write_recipes};
 fn main() -> Result<ExitCode> {
     let args = Args::parse();
     let mut reg = handlebars_registry(args.templates.as_deref())?;
-    reg.register_helper("l10n", Box::new(L10nHelper::new(args.lang.clone())?));
+    reg.register_helper(
+        "l10n",
+        Box::new(L10nHelper::new(args.l10n, args.lang.clone())?),
+    );
     let mut ctx = Ctx {
         src: args.source,
         reg,
