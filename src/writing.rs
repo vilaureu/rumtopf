@@ -200,5 +200,6 @@ fn template_ctx(ctx: &Ctx) -> serde_json::Value {
         "footer": ctx.footer,
         "title": ctx.title.as_deref().unwrap_or("Recipes"),
         "custom_title": ctx.title.is_some(),
+        "version": env!("CARGO_PKG_VERSION"),
     })
 }

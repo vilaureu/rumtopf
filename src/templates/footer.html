@@ -3,14 +3,12 @@
         {{#if ctx.links}}
         <div class="pe-2">
             {{#each ctx.links}}
-            <a class="text-decoration-none" href="{{this.href}}"
-                >{{this.label}}</a
-            >
-            {{#unless @last}} • {{/unless}}
-            {{/each}}
+            <a class="text-decoration-none" href="{{this.href}}">
+                {{this.label}}
+            </a>
+            {{#unless @last}} • {{/unless}} {{/each}}
         </div>
-        {{/if}}
-        {{#if ctx.footer}}
+        {{/if}} {{#if ctx.footer}}
         <div class="pe-2 text-muted">{{ctx.footer}}</div>
         {{/if}}
         <ul class="nav justify-content-end">
@@ -18,8 +16,9 @@
                 <a
                     class="text-decoration-none"
                     href="https://github.com/vilaureu/rumtopf"
-                    >Open-Source</a
-                >
+                    >Open-Source
+                </a>
+                <sup>v{{ctx.version}}</sup>
             </li>
         </ul>
     </div>
