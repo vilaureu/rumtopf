@@ -72,7 +72,8 @@ fn write_recipe(
 
 pub(crate) fn write_indices(ctx: &mut Ctx<'_>, rtx: &Rtx) {
     if rtx.langs.len() < 2 {
-        if let Err(err) = create_index(ctx, rtx.recipes, None, Default::default()) {
+        let lang = rtx.langs.iter().cloned().next().flatten();
+        if let Err(err) = create_index(ctx, rtx.recipes, lang, Default::default(), false) {
             ctx.print_error(err);
         }
     } else {
@@ -96,7 +97,7 @@ pub(crate) fn write_indices(ctx: &mut Ctx<'_>, rtx: &Rtx) {
                 .map(|(_, lang)| lang)
                 .filter(|l| l.lang != Some(lang))
                 .collect::<Vec<_>>();
-            if let Err(err) = create_index(ctx, rtx.recipes, Some(lang), &langs) {
+            if let Err(err) = create_index(ctx, rtx.recipes, Some(lang), &langs, true) {
                 ctx.print_error(err);
             }
         }
@@ -112,23 +113,24 @@ fn create_index(
     recipes: &[Recipe],
     lang: Option<&str>,
     langs: &[&LangPage],
+    localized: bool,
 ) -> Result<()> {
     let mut this_lang = Vec::new();
     let mut other_lang = Vec::new();
     for recipe in recipes {
-        if lang.is_none() || recipe.lang.as_deref() == lang {
+        if recipe.lang.as_deref() == lang {
             this_lang.push(recipe);
         } else {
             other_lang.push(recipe);
         }
     }
 
-    let name = index_for_lang(lang);
+    let name = index_for_lang(lang.filter(|_| localized));
     let mut file = File::options()
         .write(true)
         .create_new(true)
-        .open(ctx.dest.join(name))
-        .with_context(|| "failed to create {name} file")?;
+        .open(ctx.dest.join(&name))
+        .with_context(|| format!("failed to create {name} file"))?;
 
     file.write_all(
         render(

@@ -41,8 +41,7 @@ fn main() -> Result<ExitCode> {
     // Copy source files after creating static files to allow overriding them.
     let mut recipes = process_source_dir(&mut ctx)?;
     recipes.sort_unstable();
-    let default_lang = calc_default_lang(args.lang, &recipes);
-    let rtx = Rtx::new(&recipes, &default_lang);
+    let rtx = Rtx::new(&recipes, &args.lang);
 
     write_recipes(&mut ctx, &rtx);
     write_indices(&mut ctx, &rtx);
@@ -52,22 +51,6 @@ fn main() -> Result<ExitCode> {
     } else {
         ExitCode::SUCCESS
     })
-}
-
-fn calc_default_lang(lang: Option<String>, recipes: &[Recipe]) -> String {
-    if let Some(lang) = lang {
-        return lang;
-    }
-    if let Some(lang) = recipes
-        .iter()
-        .next()
-        .and_then(|r| r.lang.as_deref())
-        .filter(|lang| recipes.iter().all(|r| r.lang.as_deref() == Some(lang)))
-    {
-        lang.to_string()
-    } else {
-        "en".to_string()
-    }
 }
 
 fn remove_dest(path: &Path) -> Result<()> {

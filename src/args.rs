@@ -38,8 +38,8 @@ pub(crate) struct Args {
     #[arg(short, long)]
     pub(crate) remove: bool,
     /// Set language for language selection index and uncategorized recipes.
-    #[arg(short = 'g', long)]
-    pub(crate) lang: Option<String>,
+    #[arg(short = 'g', long, default_value = "en")]
+    pub(crate) lang: String,
 }
 
 /// Parse link of format `label=href`
