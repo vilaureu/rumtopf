@@ -1,8 +1,8 @@
 use std::{fs::read_to_string, path::Path};
 
 use anyhow::{Context, Error, Result};
+use handlebars::html_escape;
 use pulldown_cmark::{html::push_html, Event, HeadingLevel, Parser, Tag, TagEnd};
-use pulldown_cmark_escape::escape_html;
 use regex::{Captures, Regex};
 use serde::Serialize;
 use serde_json::json;
@@ -104,9 +104,7 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
             self.title.push_str(unescaped);
         }
 
-        let mut text = String::new();
-        escape_html(&mut text, unescaped).context("Failed to escape HTML")?;
-
+        let text = html_escape(unescaped);
         let text = self.servings_re.replace_all(&text, |caps: &Captures| {
             let servings = &caps[1];
             let replacement = servings
