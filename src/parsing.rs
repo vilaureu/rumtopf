@@ -12,27 +12,55 @@ use crate::utils::*;
 #[derive(Serialize)]
 pub(crate) struct Recipe {
     pub(crate) title: String,
+    pub(crate) stem: String,
     pub(crate) short: String,
     #[serde(skip)]
     pub(crate) recipe: String,
+    pub(crate) lang: Option<String>,
+}
+
+impl PartialEq for Recipe {
+    fn eq(&self, other: &Self) -> bool {
+        self.stem == other.stem
+    }
+}
+
+impl Eq for Recipe {}
+
+impl Ord for Recipe {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.stem.cmp(&other.stem)
+    }
+}
+
+impl PartialOrd for Recipe {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 pub(crate) fn parse_file(ctx: &mut Ctx, path: &Path) -> Result<Recipe> {
-    let short = path
+    let stem = path
         .file_stem()
         .context("File without file name")?
         .to_string_lossy();
+    let (short, lang) = match stem.rsplit_once(".") {
+        Some((short, lang)) => (short.to_string(), Some(lang.to_string())),
+        None => (stem.to_string(), None),
+    };
 
     let source = read_to_string(path).context("Failed to read file")?;
 
-    let mut parser = ServingWrapper::new(Parser::new(&source), ctx, path);
+    let mut parser = ServingWrapper::new(Parser::new(&source), ctx, path, lang.as_deref());
     let mut recipe = String::new();
     push_html(&mut recipe, &mut parser);
 
     Ok(Recipe {
         title: parser.title,
-        short: short.to_string(),
+        stem: stem.to_string(),
+        short,
         recipe,
+        lang,
     })
 }
 
@@ -45,12 +73,18 @@ where
     servings_re: Regex,
     ctx: &'l mut Ctx<'c>,
     path: &'l Path,
+    lang: Option<&'l str>,
     title: String,
     in_title: bool,
 }
 
 impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
-    pub(crate) fn new(iter: I, ctx: &'l mut Ctx<'c>, path: &'l Path) -> Self {
+    pub(crate) fn new(
+        iter: I,
+        ctx: &'l mut Ctx<'c>,
+        path: &'l Path,
+        lang: Option<&'l str>,
+    ) -> Self {
         Self {
             iter,
             scaling_re: Regex::new(r"\{\{\s*([^}]+)\s*\}\}")
@@ -59,6 +93,7 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
                 .expect("failed to compile servings regex"),
             ctx,
             path,
+            lang,
             title: String::new(),
             in_title: false,
         }
@@ -78,7 +113,11 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
                 .parse()
                 .with_context(|| format!(r#"Failed to parse servings {}"#, servings))
                 .and_then(|_: f32| {
-                    render(&self.ctx.reg, "servings", &json!({"servings": servings}))
+                    render(
+                        &self.ctx.reg,
+                        "servings",
+                        &json!({"servings": servings, "lang": self.lang}),
+                    )
                 });
             match replacement {
                 Ok(t) => t,
@@ -93,7 +132,13 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
             let replacement = base
                 .parse()
                 .with_context(|| format!(r#"Failed to parse scaling base "{}""#, base))
-                .and_then(|_: f32| render(&self.ctx.reg, "scaling", &json!({"base": base})));
+                .and_then(|_: f32| {
+                    render(
+                        &self.ctx.reg,
+                        "scaling",
+                        &json!({"base": base, "lang": self.lang}),
+                    )
+                });
             match replacement {
                 Ok(t) => t,
                 Err(err) => {

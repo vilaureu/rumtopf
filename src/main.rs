@@ -1,14 +1,14 @@
 mod args;
 mod files;
+mod l10n;
 mod parsing;
 mod utils;
+mod writing;
 
 use std::{
-    fs::{create_dir, read_dir, remove_dir_all, DirEntry, File},
-    io::Write,
+    fs::{create_dir, read_dir, remove_dir_all, DirEntry},
     path::Path,
     process::ExitCode,
-    vec,
 };
 
 use anyhow::{bail, Context, Result};
@@ -16,13 +16,15 @@ use args::Args;
 use clap::Parser;
 use files::*;
 use handlebars::Handlebars;
+use l10n::L10nHelper;
 use parsing::*;
-use serde_json::json;
 use utils::*;
+use writing::{write_indices, write_recipes};
 
 fn main() -> Result<ExitCode> {
     let args = Args::parse();
-    let reg = handlebars_registry(args.templates.as_deref())?;
+    let mut reg = handlebars_registry(args.templates.as_deref())?;
+    reg.register_helper("l10n", Box::new(L10nHelper::new(args.lang.clone())?));
     let mut ctx = Ctx {
         src: args.source,
         reg,
@@ -34,37 +36,41 @@ fn main() -> Result<ExitCode> {
     };
 
     if args.remove {
-        remove_dir_all(&ctx.dest).with_context(|| {
-            format!(
-                "Failed to remove destination directory {}",
-                ctx.dest.to_string_lossy()
-            )
-        })?;
+        remove_dest(&ctx.dest)?;
     }
-    create_dir(&ctx.dest).with_context(|| {
-        format!(
-            "Failed to create destination directory {}",
-            ctx.dest.to_string_lossy()
-        )
-    })?;
+    create_dest(&ctx.dest)?;
     create_static(&mut ctx);
+
     // Copy source files after creating static files to allow overriding them.
-    let recipes = process_source_dir(&mut ctx)?;
-    for recipe in &recipes {
-        if let Err(err) = write_recipe(&ctx, recipe, &recipes)
-            .with_context(|| format!("Skipping writing recipe {}", recipe.title))
-        {
-            ctx.print_error(err);
-        }
-    }
-    if let Err(err) = create_index(&ctx, recipes) {
-        ctx.print_error(err);
-    }
+    let mut recipes = process_source_dir(&mut ctx)?;
+    recipes.sort_unstable();
+    let rtx = Rtx::new(&recipes, &args.lang);
+
+    write_recipes(&mut ctx, &rtx);
+    write_indices(&mut ctx, &rtx);
 
     Ok(if ctx.any_error {
         ExitCode::from(2)
     } else {
         ExitCode::SUCCESS
+    })
+}
+
+fn remove_dest(path: &Path) -> Result<()> {
+    remove_dir_all(path).with_context(|| {
+        format!(
+            "Failed to remove destination directory {}",
+            path.to_string_lossy()
+        )
+    })
+}
+
+fn create_dest(dest: &Path) -> Result<()> {
+    create_dir(dest).with_context(|| {
+        format!(
+            "Failed to create destination directory {}",
+            dest.to_string_lossy()
+        )
     })
 }
 
@@ -177,55 +183,4 @@ fn process_template(entry: &DirEntry, reg: &mut Handlebars) -> Result<()> {
 
     reg.register_template_file(&name, &path)?;
     Ok(())
-}
-
-fn write_recipe(ctx: &Ctx, recipe: &Recipe, recipes: &[Recipe]) -> Result<()> {
-    let html = render(
-        &ctx.reg,
-        "recipe",
-        &json!({"recipe": recipe.recipe, "title": recipe.title, "ctx": template_ctx(ctx, recipes)}),
-    )?;
-
-    // short was a valid file stem so it should be safe to use as a stem here
-    // too.
-    let path = ctx.dest.join(recipe.short.to_string() + ".html");
-    let mut file = File::options()
-        .write(true)
-        .create_new(true)
-        .open(&path)
-        .with_context(|| format!("failed to create HTML file {}", path.to_string_lossy()))?;
-    file.write_all(html.as_bytes())
-        .with_context(|| format!("failed to write HTML file {}", path.to_string_lossy()))?;
-
-    Ok(())
-}
-
-fn create_index(ctx: &Ctx, recipes: Vec<Recipe>) -> Result<()> {
-    let mut file = File::options()
-        .write(true)
-        .create_new(true)
-        .open(ctx.dest.join("index.html"))
-        .context("failed to create index.html file")?;
-
-    file.write_all(
-        render(
-            &ctx.reg,
-            "index",
-            &json!({"ctx": template_ctx(ctx, &recipes)}),
-        )?
-        .as_bytes(),
-    )
-    .context("failed to write index.html file")?;
-
-    Ok(())
-}
-
-fn template_ctx(ctx: &Ctx, recipes: &[Recipe]) -> serde_json::Value {
-    json!({
-        "recipes": recipes,
-        "links": ctx.links,
-        "footer": ctx.footer,
-        "title": ctx.title.as_deref().unwrap_or("Recipes"),
-        "custom_title": ctx.title.is_some()
-    })
 }

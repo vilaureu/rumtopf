@@ -1,0 +1,34 @@
+{
+  "overview": {
+    "en": "Recipe Overview",
+    "de": "Rezeptübersicht"
+  },
+  "language": {
+    "en": "Language",
+    "de": "Sprache"
+  },
+  "uncategorized": {
+    "en": "uncategorized",
+    "de": "unkategorisiert"
+  },
+  "available": {
+    "en": "{{0}} recipes available",
+    "de": "{{0}} Rezepte verfügbar"
+  },
+  "select": {
+    "en": "Select a Language",
+    "de": "Wählen Sie eine Sprache"
+  },
+  "recipe": {
+    "en": "{{0}} Recipe",
+    "de": "{{0}} Rezept"
+  },
+  "servings": {
+    "en": "Servings",
+    "de": "Portionen"
+  },
+  "change": {
+    "en": "Change",
+    "de": "Ändern"
+  }
+}
