@@ -142,6 +142,7 @@ fn create_index(
                 "other_lang": &other_lang,
                 "index": "index.html",
                 "langs": langs,
+                "lang": lang,
             }),
         )?
         .as_bytes(),

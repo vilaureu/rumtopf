@@ -51,7 +51,7 @@ pub(crate) fn parse_file(ctx: &mut Ctx, path: &Path) -> Result<Recipe> {
 
     let source = read_to_string(path).context("Failed to read file")?;
 
-    let mut parser = ServingWrapper::new(Parser::new(&source), ctx, path);
+    let mut parser = ServingWrapper::new(Parser::new(&source), ctx, path, lang.as_deref());
     let mut recipe = String::new();
     push_html(&mut recipe, &mut parser);
 
@@ -73,12 +73,18 @@ where
     servings_re: Regex,
     ctx: &'l mut Ctx<'c>,
     path: &'l Path,
+    lang: Option<&'l str>,
     title: String,
     in_title: bool,
 }
 
 impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
-    pub(crate) fn new(iter: I, ctx: &'l mut Ctx<'c>, path: &'l Path) -> Self {
+    pub(crate) fn new(
+        iter: I,
+        ctx: &'l mut Ctx<'c>,
+        path: &'l Path,
+        lang: Option<&'l str>,
+    ) -> Self {
         Self {
             iter,
             scaling_re: Regex::new(r"\{\{\s*([^}]+)\s*\}\}")
@@ -87,6 +93,7 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
                 .expect("failed to compile servings regex"),
             ctx,
             path,
+            lang,
             title: String::new(),
             in_title: false,
         }
@@ -106,7 +113,11 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
                 .parse()
                 .with_context(|| format!(r#"Failed to parse servings {}"#, servings))
                 .and_then(|_: f32| {
-                    render(&self.ctx.reg, "servings", &json!({"servings": servings}))
+                    render(
+                        &self.ctx.reg,
+                        "servings",
+                        &json!({"servings": servings, "lang": self.lang}),
+                    )
                 });
             match replacement {
                 Ok(t) => t,
@@ -121,7 +132,13 @@ impl<'l, 'c, I> ServingWrapper<'l, 'c, I> {
             let replacement = base
                 .parse()
                 .with_context(|| format!(r#"Failed to parse scaling base "{}""#, base))
-                .and_then(|_: f32| render(&self.ctx.reg, "scaling", &json!({"base": base})));
+                .and_then(|_: f32| {
+                    render(
+                        &self.ctx.reg,
+                        "scaling",
+                        &json!({"base": base, "lang": self.lang}),
+                    )
+                });
             match replacement {
                 Ok(t) => t,
                 Err(err) => {

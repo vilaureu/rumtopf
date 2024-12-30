@@ -1,5 +1,6 @@
 mod args;
 mod files;
+mod l10n;
 mod parsing;
 mod utils;
 mod writing;
@@ -15,13 +16,15 @@ use args::Args;
 use clap::Parser;
 use files::*;
 use handlebars::Handlebars;
+use l10n::L10nHelper;
 use parsing::*;
 use utils::*;
 use writing::{write_indices, write_recipes};
 
 fn main() -> Result<ExitCode> {
     let args = Args::parse();
-    let reg = handlebars_registry(args.templates.as_deref())?;
+    let mut reg = handlebars_registry(args.templates.as_deref())?;
+    reg.register_helper("l10n", Box::new(L10nHelper::new(args.lang.clone())?));
     let mut ctx = Ctx {
         src: args.source,
         reg,
