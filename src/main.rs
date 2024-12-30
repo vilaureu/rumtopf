@@ -7,6 +7,7 @@ mod writing;
 
 use std::{
     fs::{create_dir, read_dir, remove_dir_all, DirEntry},
+    io::ErrorKind,
     path::Path,
     process::ExitCode,
 };
@@ -57,12 +58,20 @@ fn main() -> Result<ExitCode> {
 }
 
 fn remove_dest(path: &Path) -> Result<()> {
-    remove_dir_all(path).with_context(|| {
-        format!(
-            "Failed to remove destination directory {}",
-            path.to_string_lossy()
-        )
-    })
+    remove_dir_all(path)
+        .or_else(|e| {
+            if e.kind() == ErrorKind::NotFound {
+                Ok(())
+            } else {
+                Err(e)
+            }
+        })
+        .with_context(|| {
+            format!(
+                "Failed to remove destination directory {}",
+                path.to_string_lossy()
+            )
+        })
 }
 
 fn create_dest(dest: &Path) -> Result<()> {
